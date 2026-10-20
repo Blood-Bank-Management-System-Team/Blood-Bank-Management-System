@@ -1,31 +1,53 @@
-# Blood Bank Management System
+# Blood Bank Management System (BBMS)
 
-A **Software Engineering project** focused on designing and developing a Blood Bank Management System to efficiently manage blood donors, blood inventory, blood requests, and related operations.
+Team 9 – Software Engineering project. A layered modular monolith built with Python 3.12, Django 5, Django REST Framework, PostgreSQL and Docker. User roles: Donor, Blood Bank Staff, Hospital/Patient, Administrator.
 
-## Team 9
+## Modules
 
-| Team Member              | SRN           |
-| ------------------------ | ------------- |
-| **Shreelakshmi G Bhat**  | PES2UG24CS478 |
-| **Sangadala Yeasaswani** | PES2UG24CS441 |
-| **Shreyash M Yadwad**    | PES2UG24CS493 |
-| **Shreenandan Jamadar**  | PES2UG24CS479 |
+| App | Functional requirements |
+|---|---|
+| users | FR1–FR3 |
+| donors | FR4–FR7 |
+| inventory | FR8–FR11, FR30, FR33, FR34 |
+| bloodrequests | FR12–FR16, FR31, FR32, FR35 |
+| camps | FR17–FR19 |
+| notifications | FR20–FR21 |
+| reports | FR22, FR23, FR28 |
 
-## Project Overview
+Operational rules (e.g. `BBMS_MIN_DONATION_INTERVAL_DAYS`, default 90) are configured through environment variables, not hard-coded.
 
-The **Blood Bank Management System** aims to provide a centralized system for managing blood bank operations. The system can help maintain donor records, track blood stock, manage blood requests, and ensure that blood units are efficiently recorded and made available when required.
+## Run locally (Windows, venv + SQLite)
 
-## Key Areas
+```powershell
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env      # optional; leave DB_HOST empty to use SQLite
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver
+```
 
-* Donor registration and management
-* Blood group and blood unit management
-* Blood inventory tracking
-* Blood request management
-* Patient/requester records
-* Blood availability tracking
-* Efficient management of blood bank operations
+Open http://127.0.0.1:8000/, `/admin/` and `/api/health/`.
 
-## Team
+## Run with Docker
 
-**Team No. 9**
-Software Engineering Project
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+The web app is served on http://localhost:8000/ with PostgreSQL 16 as the database.
+
+## Run tests
+
+```powershell
+python manage.py test
+```
+
+## Team workflow
+
+- Work on your own branch (e.g. `yourname/bb-NN-short-title`).
+- Open a pull request into `main` and put `Closes #N` in the description.
+- The repo owner reviews and merges.
+- Any deviation from the SRS/SAD is recorded in `DEVIATIONS.md`.
