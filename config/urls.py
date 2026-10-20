@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 from django.views.generic import TemplateView
 
 from users.views import health
@@ -7,5 +7,7 @@ from users.views import health
 urlpatterns = [
     path("", TemplateView.as_view(template_name="home.html"), name="home"),
     path("api/health/", health, name="health"),
+    path("api/auth/", include("users.urls")),
+    path("", include("users.web_urls")),
     path("admin/", admin.site.urls),
 ]
