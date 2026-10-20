@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Login - BBMS{% endblock %}
+{% block content %}
+<h1>Login</h1>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <input type="hidden" name="next" value="{{ next }}">
+  <button type="submit">Login</button>
+</form>
+<p class="center">No account? <a href="{% url 'register' %}">Register</a> &middot; <a href="{% url 'home' %}">Home</a></p>
+{% endblock %}
