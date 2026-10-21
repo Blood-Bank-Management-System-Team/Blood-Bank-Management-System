@@ -1,7 +1,4 @@
-from django.test import TestCase
 
-# Create your tests here.
-from django.urls import reverse
 from rest_framework.test import APITestCase
 
 from users.models import User
@@ -22,11 +19,12 @@ class BloodUnitAPITests(APITestCase):
         )
 
         self.list_url = "/api/inventory/"
+        self.stock_summary_url = "/api/inventory/stock-summary/"
 
         self.unit = BloodUnit.objects.create(
             blood_group="O+",
             quantity=2,
-            collection_date="2026-10-21",
+            collection_date="2026-10-01",
             expiry_date="2026-11-25",
             bank_location="Test Blood Bank",
             created_by=self.staff,
@@ -49,11 +47,13 @@ class BloodUnitAPITests(APITestCase):
         data = {
             "blood_group": "A+",
             "quantity": 3,
-            "collection_date": "2026-10-21",
+            "collection_date": "2026-10-01",
             "expiry_date": "2026-11-25",
             "bank_location": "Test Blood Bank",
         }
-        response = self.client.post(self.list_url, data, format="json")
+        response = self.client.post(
+            self.list_url, data, format="json"
+        )
 
         self.assertEqual(response.status_code, 201)
         self.assertEqual(
@@ -82,3 +82,35 @@ class BloodUnitAPITests(APITestCase):
         self.assertFalse(
             BloodUnit.objects.filter(id=self.unit.id).exists()
         )
+
+    def test_stock_summary_groups_by_blood_group_and_location(self):
+        BloodUnit.objects.create(
+            blood_group="O+",
+            quantity=3,
+            collection_date="2026-10-01",
+            expiry_date="2026-11-25",
+            bank_location="Test Blood Bank",
+            created_by=self.staff,
+            updated_by=self.staff,
+        )
+
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(self.stock_summary_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["blood_group"], "O+")
+        self.assertEqual(
+            response.data[0]["bank_location"], "Test Blood Bank"
+        )
+        self.assertEqual(response.data[0]["total_quantity"], 5)
+
+    def test_stock_summary_excludes_expired_units(self):
+        self.unit.expiry_date = "2026-10-20"
+        self.unit.save()
+
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(self.stock_summary_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 0)
