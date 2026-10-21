@@ -1,23 +1,314 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#991b1b">
   <title>{% block title %}Blood Bank Management System{% endblock %}</title>
+
   <style>
-    body { font-family: system-ui, sans-serif; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #fdf2f2; color: #222; }
-    main { padding: 1.5rem; width: 100%; max-width: 26rem; box-sizing: border-box; }
-    h1 { color: #b71c1c; font-size: clamp(1.5rem, 5vw, 2rem); text-align: center; }
-    form p { display: flex; flex-direction: column; margin: .8rem 0; }
-    label { font-weight: 600; margin-bottom: .25rem; }
-    input, select { padding: .6rem; font-size: 1rem; border: 1px solid #bbb; border-radius: 6px; }
-    .helptext { font-size: .8rem; color: #666; }
-    .errorlist { color: #b71c1c; list-style: none; padding: 0; margin: .25rem 0; font-size: .9rem; }
-    button, .btn { display: inline-block; padding: .6rem 1.2rem; background: #b71c1c; color: #fff; border: 0; border-radius: 6px; font-size: 1rem; text-decoration: none; cursor: pointer; }
-    .center { text-align: center; }
+    :root {
+      --primary: #991b1b;
+      --primary-dark: #7f1d1d;
+      --background: #fff7f7;
+      --surface: #ffffff;
+      --text: #292524;
+      --muted: #78716c;
+      --border: #f0dada;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--background);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    a {
+      color: var(--primary);
+    }
+
+    .site-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 10px rgba(80, 20, 20, 0.04);
+    }
+
+    .nav-container {
+      max-width: 1150px;
+      margin: auto;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      color: var(--primary);
+      font-size: 1.2rem;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .site-nav {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .site-nav a,
+    .nav-button {
+      display: inline-block;
+      padding: 8px 13px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      font-size: 0.95rem;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .site-nav a:hover {
+      background: #fff0f0;
+      color: var(--primary);
+    }
+
+    .site-nav .nav-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .site-nav .nav-primary:hover {
+      background: var(--primary-dark);
+      color: white;
+    }
+
+    .logout-form {
+      display: inline;
+      margin: 0;
+    }
+
+    .nav-button {
+      background: var(--primary);
+      color: white;
+    }
+
+    .nav-button:hover {
+      background: var(--primary-dark);
+    }
+
+    main {
+      width: 100%;
+      max-width: 1150px;
+      margin: 0 auto;
+      padding: 32px 24px 48px;
+    }
+
+    h1, h2, h3 {
+      line-height: 1.25;
+    }
+
+    h1 {
+      color: var(--primary);
+      font-size: clamp(1.7rem, 4vw, 2.5rem);
+    }
+
+    .page-heading {
+      margin-bottom: 24px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .card {
+      min-width: 0;
+      padding: 22px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 4px 16px rgba(80, 20, 20, 0.04);
+    }
+
+    .card h2, .card h3 {
+      margin-top: 0;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 16px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--primary);
+      color: white;
+      font: inherit;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-secondary {
+      background: #fff0f0;
+      color: var(--primary);
+    }
+
+    .btn-secondary:hover {
+      background: #ffe1e1;
+      color: var(--primary-dark);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #fff0f0;
+      color: var(--primary);
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    form p {
+      display: flex;
+      flex-direction: column;
+      margin: 0.8rem 0;
+    }
+
+    label {
+      margin-bottom: 0.25rem;
+      font-weight: 600;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      max-width: 100%;
+      padding: 0.7rem;
+      border: 1px solid #cfc4c4;
+      border-radius: 7px;
+      font: inherit;
+    }
+
+    input:focus, select:focus, textarea:focus,
+    a:focus-visible, button:focus-visible {
+      outline: 3px solid #fca5a5;
+      outline-offset: 2px;
+    }
+
+    .helptext {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .errorlist {
+      padding: 0;
+      color: var(--primary);
+      list-style: none;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    .site-footer {
+      padding: 20px 24px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      text-align: center;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 640px) {
+      .nav-container {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
+        padding: 14px 16px;
+      }
+
+      .site-nav {
+        width: 100%;
+        gap: 5px;
+      }
+
+      .site-nav a, .nav-button {
+        padding: 8px 10px;
+        font-size: 0.9rem;
+      }
+
+      main {
+        padding: 24px 16px 36px;
+      }
+
+      .card-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .card {
+        padding: 18px;
+      }
+    }
   </style>
 </head>
+
 <body>
-  <main>{% block content %}{% endblock %}</main>
+  <header class="site-header">
+    <div class="nav-container">
+      <a class="brand" href="{% url 'home' %}">🩸 BBMS</a>
+
+      <nav class="site-nav" aria-label="Main navigation">
+        <a href="{% url 'home' %}">Home</a>
+
+        {% if user.is_authenticated %}
+          <a href="{% url 'dashboard' %}">My Dashboard</a>
+
+          {% if user.role == "DONOR" %}
+            <a href="{% url 'dashboard-donor' %}">Donor</a>
+          {% elif user.role == "STAFF" %}
+            <a href="{% url 'dashboard-staff' %}">Staff</a>
+          {% elif user.role == "HOSPITAL" %}
+            <a href="{% url 'dashboard-hospital' %}">Hospital</a>
+          {% elif user.role == "ADMIN" %}
+            <a href="{% url 'dashboard-admin' %}">Admin Dashboard</a>
+          {% endif %}
+
+          <form class="logout-form" method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button class="nav-button" type="submit">Logout</button>
+          </form>
+        {% else %}
+          <a href="{% url 'login' %}">Login</a>
+          <a class="nav-primary" href="{% url 'register' %}">Register</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    Blood Bank Management System · Team 9
+  </footer>
 </body>
 </html>

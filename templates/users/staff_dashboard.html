@@ -1,0 +1,40 @@
+
+{% extends "base.html" %}
+
+{% block title %}Staff Dashboard - BBMS{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <span class="badge">Staff Portal</span>
+  <h1>Welcome, {{ user.get_full_name|default:user.username }}</h1>
+  <p class="muted">
+    Manage blood bank operations from your staff workspace.
+  </p>
+</section>
+
+<div class="card-grid">
+  <section class="card">
+    <h2>📦 Blood Inventory</h2>
+    <p>Access the inventory workspace to manage available blood units.</p>
+    <p class="muted">Inventory management features will be available through the inventory module.</p>
+  </section>
+
+  <section class="card">
+    <h2>🩸 Blood Requests</h2>
+    <p>Review the blood-request workflow for hospital requirements.</p>
+    <p class="muted">Request processing features will be connected as the module develops.</p>
+  </section>
+
+  <section class="card">
+    <h2>👥 Donor Services</h2>
+    <p>Support donor-related blood bank operations.</p>
+    <p class="muted">Use the existing donor module for available donor functionality.</p>
+  </section>
+
+  <section class="card">
+    <h2>🔐 Staff Account</h2>
+    <p><strong>Username:</strong> {{ user.username }}</p>
+    <p><strong>Role:</strong> {{ user.get_role_display }}</p>
+  </section>
+</div>
+{% endblock %}
