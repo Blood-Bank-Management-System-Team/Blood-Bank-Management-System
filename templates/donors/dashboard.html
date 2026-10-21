@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Donor Dashboard - BBMS{% endblock %}
+{% block content %}
+<h1>Welcome, {{ user.get_full_name|default:user.username }}</h1>
+<p class="center">Role: <strong>{{ user.get_role_display }}</strong></p>
+
+{% if profile %}
+  <p class="center">Blood group: <strong>{{ profile.blood_group }}</strong></p>
+  <p class="center">
+    {% if eligibility.eligible %}
+      <span class="badge badge-ok">Eligible</span>
+    {% else %}
+      <span class="badge badge-no">Not eligible</span>
+    {% endif %}
+  </p>
+  {% if not eligibility.eligible %}
+    <ul class="reasons">
+      {% for reason in eligibility.reasons %}<li>{{ reason }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+  <p class="center">Next eligible donation date: <strong>{{ eligibility.next_eligible_date|date:"j M Y" }}</strong></p>
+  <p class="center"><a class="btn" href="{% url 'donor-profile' %}">Edit donor profile</a></p>
+{% else %}
+  <p class="center">You have not completed your donor profile yet.</p>
+  <p class="center"><a class="btn" href="{% url 'donor-profile' %}">Complete your donor profile</a></p>
+{% endif %}
+
+<form method="post" action="{% url 'logout' %}" class="center" style="margin-top:1rem">
+  {% csrf_token %}
+  <button type="submit">Logout</button>
+</form>
+<style>
+  .badge { display: inline-block; padding: .35rem .9rem; border-radius: 999px; font-weight: 700; color: #fff; }
+  .badge-ok { background: #2e7d32; }
+  .badge-no { background: #b71c1c; }
+  .reasons { color: #b71c1c; font-size: .95rem; }
+</style>
+{% endblock %}
