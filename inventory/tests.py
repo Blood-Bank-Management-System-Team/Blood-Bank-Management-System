@@ -114,3 +114,47 @@ class BloodUnitAPITests(APITestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 0)
+
+    def test_expired_unit_is_flagged(self):
+        self.unit.expiry_date = "2026-10-20"
+        self.unit.save()
+
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(self.list_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data[0]["is_expired"])
+
+    def test_available_filter_excludes_expired_units(self):
+        self.unit.expiry_date = "2026-10-20"
+        self.unit.save()
+
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(
+            self.list_url, {"available": "true"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 0)
+
+    def test_available_filter_includes_non_expired_units(self):
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(
+            self.list_url, {"available": "true"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+        self.assertFalse(response.data[0]["is_expired"])
+
+    def test_available_filter_excludes_zero_quantity_units(self):
+        self.unit.quantity = 0
+        self.unit.save()
+
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(
+            self.list_url, {"available": "true"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 0)
