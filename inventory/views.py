@@ -1,31 +1,30 @@
 
 from django.db.models import Sum
 from django.utils import timezone
-from rest_framework import status
+from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from users.permissions import IsHospital
+from users.permissions import IsHospital, IsStaffOrAdmin
 
-from .models import BloodStock
+from .models import BloodStock, BloodUnit
+from .serializers import BloodAvailabilitySerializer, BloodUnitSerializer
 
 
 class BloodAvailabilityView(APIView):
     permission_classes = [IsHospital]
 
     def get(self, request):
-        blood_group = request.query_params.get("blood_group", "").strip().upper()
+        blood_group = request.query_params.get(
+            "blood_group", ""
+        ).strip().upper()
         location = request.query_params.get("location", "").strip()
 
         valid_groups = BloodStock.BloodGroup.values
 
         if not blood_group or not location:
             return Response(
-                {
-                    "detail": (
-                        "Both blood_group and location are required."
-                    )
-                },
+                {"detail": "Both blood_group and location are required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -68,3 +67,52 @@ class BloodAvailabilityView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class BloodUnitListCreateView(generics.ListCreateAPIView):
+    queryset = BloodUnit.objects.all()
+    serializer_class = BloodUnitSerializer
+    permission_classes = [IsStaffOrAdmin]
+
+    def get_queryset(self):
+        queryset = BloodUnit.objects.all()
+
+        if self.request.query_params.get("available", "").lower() == "true":
+            queryset = queryset.filter(
+                expiry_date__gte=timezone.localdate(),
+                quantity__gt=0,
+            )
+
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(
+            created_by=self.request.user,
+            updated_by=self.request.user,
+        )
+
+
+class BloodUnitDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = BloodUnit.objects.all()
+    serializer_class = BloodUnitSerializer
+    permission_classes = [IsStaffOrAdmin]
+
+    def perform_update(self, serializer):
+        serializer.save(updated_by=self.request.user)
+
+
+class StockSummaryView(APIView):
+    permission_classes = [IsStaffOrAdmin]
+
+    def get(self, request):
+        stock = (
+            BloodUnit.objects.filter(
+                expiry_date__gte=timezone.localdate(),
+                quantity__gt=0,
+            )
+            .values("blood_group", "bank_location")
+            .annotate(total_quantity=Sum("quantity"))
+            .order_by("blood_group", "bank_location")
+        )
+
+        return Response(list(stock))
