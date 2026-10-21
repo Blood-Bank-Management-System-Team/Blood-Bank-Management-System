@@ -1,7 +1,5 @@
-from django.shortcuts import render
 
-# Create your views here.
-
+from django.utils import timezone
 from rest_framework import generics
 
 from users.permissions import IsStaffOrAdmin
@@ -11,9 +9,19 @@ from .serializers import BloodUnitSerializer
 
 
 class BloodUnitListCreateView(generics.ListCreateAPIView):
-    queryset = BloodUnit.objects.all().order_by("id")
     serializer_class = BloodUnitSerializer
     permission_classes = [IsStaffOrAdmin]
+
+    def get_queryset(self):
+        queryset = BloodUnit.objects.all().order_by("id")
+
+        if self.request.query_params.get("available", "").lower() == "true":
+            queryset = queryset.filter(
+                expiry_date__gte=timezone.localdate(),
+                quantity__gt=0,
+            )
+
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(

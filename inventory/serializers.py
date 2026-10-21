@@ -5,6 +5,9 @@ from .models import BloodUnit
 
 
 class BloodUnitSerializer(serializers.ModelSerializer):
+    is_expired = serializers.ReadOnlyField()
+    is_available = serializers.ReadOnlyField()
+
     class Meta:
         model = BloodUnit
         fields = [
@@ -13,11 +16,19 @@ class BloodUnitSerializer(serializers.ModelSerializer):
             "quantity",
             "collection_date",
             "expiry_date",
+            "is_expired",
+            "is_available",
             "bank_location",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "is_expired",
+            "is_available",
+            "created_at",
+            "updated_at",
+        ]
 
     def validate(self, attrs):
         collection_date = attrs.get(
