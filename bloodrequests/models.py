@@ -1,3 +1,64 @@
+
+import uuid
+
+from django.conf import settings
 from django.db import models
 
-# Create your models here.
+
+class BloodRequest(models.Model):
+    class BloodGroup(models.TextChoices):
+        A_POS = "A+", "A+"
+        A_NEG = "A-", "A-"
+        B_POS = "B+", "B+"
+        B_NEG = "B-", "B-"
+        AB_POS = "AB+", "AB+"
+        AB_NEG = "AB-", "AB-"
+        O_POS = "O+", "O+"
+        O_NEG = "O-", "O-"
+
+    class Priority(models.TextChoices):
+        EMERGENCY = "emergency", "Emergency"
+        SCHEDULED = "scheduled", "Scheduled"
+
+    class RequestStatus(models.TextChoices):
+        PENDING = "pending", "Pending"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+        FULFILLED = "fulfilled", "Fulfilled"
+
+    request_id = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+    )
+    requester = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="blood_requests",
+    )
+    blood_group = models.CharField(
+        max_length=3,
+        choices=BloodGroup.choices,
+    )
+    units = models.PositiveIntegerField()
+    location = models.CharField(max_length=100)
+    priority = models.CharField(
+        max_length=10,
+        choices=Priority.choices,
+    )
+    required_date = models.DateField(
+        null=True,
+        blank=True,
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=RequestStatus.choices,
+        default=RequestStatus.PENDING,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.request_id} - {self.blood_group} ({self.status})"

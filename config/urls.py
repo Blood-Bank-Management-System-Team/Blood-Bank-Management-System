@@ -10,6 +10,7 @@ urlpatterns = [
     path("api/auth/", include("users.urls")),
     path("api/donors/", include("donors.urls")),
     path("api/blood/", include("inventory.urls")),
+    path("api/blood-requests/", include("bloodrequests.urls")),
     # donors' web URLs come first so its donor dashboard replaces the placeholder one
     path("api/inventory/", include("inventory.urls")),
     path("", include("donors.web_urls")),
