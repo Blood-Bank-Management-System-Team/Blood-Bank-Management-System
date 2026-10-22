@@ -1,38 +1,93 @@
+
 {% extends "base.html" %}
+
 {% block title %}Donor Dashboard - BBMS{% endblock %}
+
 {% block content %}
-<h1>Welcome, {{ user.get_full_name|default:user.username }}</h1>
-<p class="center">Role: <strong>{{ user.get_role_display }}</strong></p>
+<section class="page-heading">
+  <span class="badge">Donor Portal</span>
+  <h1>Welcome, {{ user.get_full_name|default:user.username }}</h1>
+  <p class="muted">Manage your donor information and check your donation eligibility.</p>
+</section>
 
-{% if profile %}
-  <p class="center">Blood group: <strong>{{ profile.blood_group }}</strong></p>
-  <p class="center">
-    {% if eligibility.eligible %}
-      <span class="badge badge-ok">Eligible</span>
+<div class="card-grid">
+  <section class="card">
+    <h2>🩸 Donor Profile</h2>
+
+    {% if profile %}
+      <p class="muted">Your registered blood group</p>
+      <h3>{{ profile.blood_group }}</h3>
+      <a class="btn" href="{% url 'donor-profile' %}">Edit Donor Profile</a>
     {% else %}
-      <span class="badge badge-no">Not eligible</span>
+      <p>You have not completed your donor profile yet.</p>
+      <a class="btn" href="{% url 'donor-profile' %}">Complete Donor Profile</a>
     {% endif %}
-  </p>
-  {% if not eligibility.eligible %}
-    <ul class="reasons">
-      {% for reason in eligibility.reasons %}<li>{{ reason }}</li>{% endfor %}
-    </ul>
-  {% endif %}
-  <p class="center">Next eligible donation date: <strong>{{ eligibility.next_eligible_date|date:"j M Y" }}</strong></p>
-  <p class="center"><a class="btn" href="{% url 'donor-profile' %}">Edit donor profile</a></p>
-{% else %}
-  <p class="center">You have not completed your donor profile yet.</p>
-  <p class="center"><a class="btn" href="{% url 'donor-profile' %}">Complete your donor profile</a></p>
-{% endif %}
+  </section>
 
-<form method="post" action="{% url 'logout' %}" class="center" style="margin-top:1rem">
-  {% csrf_token %}
-  <button type="submit">Logout</button>
-</form>
+  <section class="card">
+    <h2>🩺 Donation Eligibility</h2>
+
+    {% if profile %}
+      {% if eligibility.eligible %}
+        <span class="badge badge-ok">Eligible</span>
+        <p>You are currently eligible to donate according to the system's eligibility check.</p>
+      {% else %}
+        <span class="badge badge-no">Not eligible</span>
+        <p>Please review the following eligibility information:</p>
+        <ul class="reasons">
+          {% for reason in eligibility.reasons %}
+            <li>{{ reason }}</li>
+          {% empty %}
+            <li>Eligibility requirements have not been met.</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      <p>
+        <strong>Next eligible donation date:</strong><br>
+        {% if eligibility.next_eligible_date %}
+          {{ eligibility.next_eligible_date|date:"j M Y" }}
+        {% else %}
+          Not available
+        {% endif %}
+      </p>
+    {% else %}
+      <p>Complete your donor profile to view your eligibility information.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2>👤 Account Information</h2>
+    <p><strong>Username:</strong> {{ user.username }}</p>
+    <p><strong>Role:</strong> {{ user.get_role_display }}</p>
+    <p class="muted">Keep your account information up to date.</p>
+  </section>
+
+  <section class="card">
+    <h2>📋 Next Steps</h2>
+    <p>Ensure your donor profile is complete and review your eligibility before planning a donation.</p>
+    <a class="btn btn-secondary" href="{% url 'dashboard' %}">My Dashboard</a>
+  </section>
+</div>
+
 <style>
-  .badge { display: inline-block; padding: .35rem .9rem; border-radius: 999px; font-weight: 700; color: #fff; }
-  .badge-ok { background: #2e7d32; }
-  .badge-no { background: #b71c1c; }
-  .reasons { color: #b71c1c; font-size: .95rem; }
+  .badge-ok {
+    background: #e8f5e9;
+    color: #1b5e20;
+  }
+
+  .badge-no {
+    background: #ffebee;
+    color: #b71c1c;
+  }
+
+  .reasons {
+    padding-left: 1.25rem;
+    color: #991b1b;
+  }
+
+  .reasons li {
+    margin-bottom: 0.35rem;
+  }
 </style>
 {% endblock %}

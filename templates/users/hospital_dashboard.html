@@ -1,0 +1,40 @@
+
+{% extends "base.html" %}
+
+{% block title %}Hospital Dashboard - BBMS{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <span class="badge">Hospital Portal</span>
+  <h1>Welcome, {{ user.get_full_name|default:user.username }}</h1>
+  <p class="muted">
+    Access your hospital workspace for blood request activities.
+  </p>
+</section>
+
+<div class="card-grid">
+  <section class="card">
+    <h2>🩸 Blood Requests</h2>
+    <p>Use the hospital workspace to manage blood requirements.</p>
+    <p class="muted">Blood request submission and tracking can be connected here.</p>
+  </section>
+
+  <section class="card">
+    <h2>📋 Request Tracking</h2>
+    <p>Keep track of your hospital's blood request activities.</p>
+    <p class="muted">Request status features will be added through the blood requests module.</p>
+  </section>
+
+  <section class="card">
+    <h2>🏥 Hospital Account</h2>
+    <p><strong>Username:</strong> {{ user.username }}</p>
+    <p><strong>Role:</strong> {{ user.get_role_display }}</p>
+  </section>
+
+  <section class="card">
+    <h2>ℹ️ Next Steps</h2>
+    <p>Use the available blood request functions when they are connected to your account.</p>
+    <a class="btn btn-secondary" href="{% url 'dashboard' %}">My Dashboard</a>
+  </section>
+</div>
+{% endblock %}

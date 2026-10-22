@@ -1,3 +1,4 @@
+
 from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
@@ -6,6 +7,7 @@ from django.views.generic import CreateView, TemplateView
 
 from .forms import RegisterForm
 from .models import User
+
 
 ROLE_DASHBOARDS = {
     User.Role.DONOR: "dashboard-donor",
@@ -39,7 +41,26 @@ class RoleDashboardView(LoginRequiredMixin, TemplateView):
     template_name = "users/dashboard.html"
     required_role = None
 
+    def get_template_names(self):
+        role_templates = {
+            User.Role.DONOR: "donors/dashboard.html",
+            User.Role.STAFF: "users/staff_dashboard.html",
+            User.Role.HOSPITAL: "users/hospital_dashboard.html",
+            User.Role.ADMIN: "users/admin_dashboard.html",
+        }
+
+        return [
+            role_templates.get(
+                self.required_role,
+                self.template_name,
+            )
+        ]
+
     def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated and request.user.role != self.required_role:
+        if (
+            request.user.is_authenticated
+            and request.user.role != self.required_role
+        ):
             raise PermissionDenied
+
         return super().dispatch(request, *args, **kwargs)
