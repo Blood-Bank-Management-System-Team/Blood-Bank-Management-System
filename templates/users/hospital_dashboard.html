@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 
 {% block title %}Hospital Dashboard - BBMS{% endblock %}
@@ -14,25 +13,29 @@
 
 <div class="card-grid">
   <section class="card">
-    <h2>🩸 Blood Requests</h2>
+    <div class="icon-tile"><svg class="icon"><use href="#i-drop"/></svg></div>
+    <h2>Blood Requests</h2>
     <p>Use the hospital workspace to manage blood requirements.</p>
     <p class="muted">Blood request submission and tracking can be connected here.</p>
   </section>
 
   <section class="card">
-    <h2>📋 Request Tracking</h2>
+    <div class="icon-tile"><svg class="icon"><use href="#i-clipboard"/></svg></div>
+    <h2>Request Tracking</h2>
     <p>Keep track of your hospital's blood request activities.</p>
     <p class="muted">Request status features will be added through the blood requests module.</p>
   </section>
 
   <section class="card">
-    <h2>🏥 Hospital Account</h2>
-    <p><strong>Username:</strong> {{ user.username }}</p>
-    <p><strong>Role:</strong> {{ user.get_role_display }}</p>
+    <div class="icon-tile"><svg class="icon"><use href="#i-medical"/></svg></div>
+    <h2>Hospital Account</h2>
+    <div class="kv"><span>Username</span><strong>{{ user.username }}</strong></div>
+    <div class="kv"><span>Role</span><strong>{{ user.get_role_display }}</strong></div>
   </section>
 
   <section class="card">
-    <h2>ℹ️ Next Steps</h2>
+    <div class="icon-tile"><svg class="icon"><use href="#i-info"/></svg></div>
+    <h2>Next Steps</h2>
     <p>Use the available blood request functions when they are connected to your account.</p>
     <a class="btn btn-secondary" href="{% url 'dashboard' %}">My Dashboard</a>
   </section>

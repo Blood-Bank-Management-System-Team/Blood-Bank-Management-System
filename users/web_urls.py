@@ -2,7 +2,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import path
 
 from .models import User
-from .web_views import DashboardRedirectView, RegisterPageView, RoleDashboardView
+from .web_views import DashboardRedirectView, ProfilePageView, RegisterPageView, RoleDashboardView
 
 urlpatterns = [
     path("register/", RegisterPageView.as_view(), name="register"),
@@ -14,6 +14,7 @@ urlpatterns = [
         name="login",
     ),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
+    path("profile/", ProfilePageView.as_view(), name="profile"),
     path("dashboard/", DashboardRedirectView.as_view(), name="dashboard"),
     path(
         "dashboard/donor/",

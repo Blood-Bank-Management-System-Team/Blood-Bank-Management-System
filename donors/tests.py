@@ -7,7 +7,9 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from .models import DonorProfile
+from django.conf import settings
+
+from .models import DonationRecord, DonorProfile
 from .services import check_eligibility
 
 User = get_user_model()
@@ -330,3 +332,113 @@ class DonorWebTests(TestCase):
         self.assertEqual(self.client.get("/dashboard/donor/").status_code, 403)
         self.client.logout()
         self.assertRedirects(self.client.get("/donors/profile/"), "/login/?next=/donors/profile/")
+
+
+class DonationTests(TestCase):
+    def setUp(self):
+        self.api = APIClient()
+        self.today = timezone.localdate()
+        self.staff = User.objects.create_user("staff1", password=PASSWORD, role="STAFF")
+        self.hospital = User.objects.create_user("hosp1", password=PASSWORD, role="HOSPITAL")
+        self.donor_user = User.objects.create_user("donor1", password=PASSWORD, role="DONOR", phone="9876543210")
+        self.donor = self.make_donor(self.donor_user)
+
+    def make_donor(self, user, **overrides):
+        data = dict(
+            user=user, blood_group="O+", date_of_birth=years_ago(25), weight_kg=Decimal("60"),
+            gender="MALE", address="x", city="Pune",
+        )
+        data.update(overrides)
+        return DonorProfile.objects.create(**data)
+
+    def record(self, user, donor=None, **overrides):
+        self.api.force_authenticate(user)
+        payload = {"donation_date": self.today.isoformat(), "blood_bank_location": "City Bank", "units": 1}
+        payload.update(overrides)
+        return self.api.post(f"/api/donors/{(donor or self.donor).id}/donations/", payload, format="json")
+
+    def test_staff_records_donation_updates_eligibility(self):
+        response = self.record(self.staff)
+        self.assertEqual(response.status_code, 201)
+        self.donor.refresh_from_db()
+        self.assertEqual(self.donor.last_donation_date, self.today)
+        result = self.donor.eligibility()
+        self.assertFalse(result.eligible)
+        self.assertEqual(
+            result.next_eligible_date,
+            self.today + timedelta(days=settings.BBMS_MIN_DONATION_INTERVAL_DAYS),
+        )
+        self.assertEqual(self.donor.donations.get().recorded_by, self.staff)
+
+    def test_last_donation_date_is_latest(self):
+        newer = self.today - timedelta(days=400)
+        older = self.today - timedelta(days=500)
+        DonationRecord.objects.create(donor=self.donor, donation_date=newer, blood_bank_location="A")
+        DonationRecord.objects.create(donor=self.donor, donation_date=older, blood_bank_location="B")
+        self.donor.refresh_from_db()
+        self.assertEqual(self.donor.last_donation_date, newer)
+
+    def test_ineligible_donor_rejected_with_reasons(self):
+        self.donor.has_chronic_illness = True
+        self.donor.save()
+        response = self.record(self.staff)
+        self.assertEqual(response.status_code, 400)
+        self.assertTrue(response.json()["reasons"])
+        self.assertEqual(self.donor.donations.count(), 0)
+
+    def test_second_donation_within_interval_rejected(self):
+        self.assertEqual(self.record(self.staff).status_code, 201)
+        self.assertEqual(self.record(self.staff).status_code, 400)
+
+    def test_donor_and_hospital_forbidden(self):
+        self.assertEqual(self.record(self.donor_user).status_code, 403)
+        self.assertEqual(self.record(self.hospital).status_code, 403)
+
+    def test_future_date_rejected(self):
+        response = self.record(self.staff, donation_date=(self.today + timedelta(days=1)).isoformat())
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("donation_date", response.json())
+
+    def test_invalid_units_rejected(self):
+        self.assertEqual(self.record(self.staff, units=3).status_code, 400)
+
+    def test_unknown_donor_404(self):
+        self.api.force_authenticate(self.staff)
+        payload = {"donation_date": self.today.isoformat(), "blood_bank_location": "X"}
+        self.assertEqual(self.api.post("/api/donors/9999/donations/", payload, format="json").status_code, 404)
+
+    def test_donor_sees_only_own_history_newest_first(self):
+        other = self.make_donor(User.objects.create_user("donor2", password=PASSWORD, role="DONOR"))
+        d1, d2 = self.today - timedelta(days=300), self.today - timedelta(days=100)
+        DonationRecord.objects.create(donor=self.donor, donation_date=d1, blood_bank_location="Old")
+        DonationRecord.objects.create(donor=self.donor, donation_date=d2, blood_bank_location="New")
+        DonationRecord.objects.create(donor=other, donation_date=d2, blood_bank_location="Other")
+        self.api.force_authenticate(self.donor_user)
+        response = self.api.get("/api/donors/me/donations/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([r["blood_bank_location"] for r in response.json()], ["New", "Old"])
+
+    def test_history_requires_donor(self):
+        self.assertEqual(self.api.get("/api/donors/me/donations/").status_code, 401)
+        self.api.force_authenticate(self.staff)
+        self.assertEqual(self.api.get("/api/donors/me/donations/").status_code, 403)
+
+    def test_staff_dashboard_form_records_donation(self):
+        self.client.force_login(self.staff)
+        form = {
+            "donor_query": "donor1", "donation_date": self.today.isoformat(),
+            "blood_bank_location": "City Bank", "units": 1,
+        }
+        self.assertEqual(self.client.post("/dashboard/staff/", form).status_code, 302)
+        self.assertEqual(self.donor.donations.count(), 1)
+        # search by phone; donor is now ineligible so nothing is recorded
+        form["donor_query"] = "9876543210"
+        self.assertEqual(self.client.post("/dashboard/staff/", form).status_code, 200)
+        self.assertEqual(self.donor.donations.count(), 1)
+
+    def test_donor_dashboard_shows_history(self):
+        DonationRecord.objects.create(donor=self.donor, donation_date=self.today, blood_bank_location="Central Bank")
+        self.client.force_login(self.donor_user)
+        response = self.client.get("/dashboard/donor/")
+        self.assertContains(response, "Central Bank")
+        self.assertEqual(response.context["donation_count"], 1)

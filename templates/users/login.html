@@ -1,12 +1,18 @@
 {% extends "base.html" %}
 {% block title %}Login - BBMS{% endblock %}
+{% block bodyclass %}bg-auth{% endblock %}
+{% block mainclass %}centered{% endblock %}
 {% block content %}
-<h1>Login</h1>
-<form method="post">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <input type="hidden" name="next" value="{{ next }}">
-  <button type="submit">Login</button>
-</form>
-<p class="center">No account? <a href="{% url 'register' %}">Register</a> &middot; <a href="{% url 'home' %}">Home</a></p>
+<section class="card auth-card">
+  <div class="icon-tile"><svg class="icon"><use href="#i-lock"/></svg></div>
+  <h1>Login</h1>
+  <p class="lead">Sign in to your BBMS account.</p>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="hidden" name="next" value="{{ next }}">
+    <button type="submit">Login</button>
+  </form>
+  <p class="form-links">No account? <a href="{% url 'register' %}">Register</a> &middot; <a href="{% url 'home' %}">Home</a></p>
+</section>
 {% endblock %}

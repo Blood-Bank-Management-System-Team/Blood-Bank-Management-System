@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 
 {% block title %}Admin Dashboard - BBMS{% endblock %}
@@ -14,27 +13,31 @@
 
 <div class="card-grid">
   <section class="card">
-    <h2>👥 User Management</h2>
+    <div class="icon-tile"><svg class="icon"><use href="#i-users"/></svg></div>
+    <h2>User Management</h2>
     <p>Manage system users and review account information.</p>
     <a class="btn" href="{% url 'admin:index' %}">Open Django Admin</a>
   </section>
 
   <section class="card">
-    <h2>🩸 Blood Bank Operations</h2>
+    <div class="icon-tile"><svg class="icon"><use href="#i-drop"/></svg></div>
+    <h2>Blood Bank Operations</h2>
     <p>Access the registered application data through authorized administration tools.</p>
     <p class="muted">Inventory and request workflows are managed through their respective modules.</p>
   </section>
 
   <section class="card">
-    <h2>📊 System Overview</h2>
+    <div class="icon-tile"><svg class="icon"><use href="#i-chart"/></svg></div>
+    <h2>System Overview</h2>
     <p>Review available records and administrative information.</p>
     <p class="muted">Dedicated reports can be connected as the reports module develops.</p>
   </section>
 
   <section class="card">
-    <h2>🔐 Administrator Account</h2>
-    <p><strong>Username:</strong> {{ user.username }}</p>
-    <p><strong>Role:</strong> {{ user.get_role_display }}</p>
+    <div class="icon-tile"><svg class="icon"><use href="#i-shield"/></svg></div>
+    <h2>Administrator Account</h2>
+    <div class="kv"><span>Username</span><strong>{{ user.username }}</strong></div>
+    <div class="kv"><span>Role</span><strong>{{ user.get_role_display }}</strong></div>
   </section>
 </div>
 {% endblock %}

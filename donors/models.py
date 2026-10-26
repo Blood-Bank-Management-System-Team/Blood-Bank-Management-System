@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import Max
 from django.utils import timezone
 
 
@@ -64,3 +65,34 @@ class DonorProfile(models.Model):
         from .services import check_eligibility
 
         return check_eligibility(self)
+
+
+class DonationRecord(models.Model):
+    donor = models.ForeignKey(DonorProfile, on_delete=models.CASCADE, related_name="donations")
+    donation_date = models.DateField(validators=[not_in_future])
+    blood_bank_location = models.CharField(max_length=200)
+    units = models.PositiveSmallIntegerField(
+        default=1, validators=[MinValueValidator(1), MaxValueValidator(2)]
+    )
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="recorded_donations",
+    )
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-donation_date", "-id"]
+
+    def __str__(self):
+        return f"{self.donor} on {self.donation_date}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        latest = self.donor.donations.aggregate(latest=Max("donation_date"))["latest"]
+        if self.donor.last_donation_date != latest:
+            self.donor.last_donation_date = latest
+            self.donor.save(update_fields=["last_donation_date", "updated_at"])

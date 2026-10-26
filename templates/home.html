@@ -1,46 +1,49 @@
-
 {% extends "base.html" %}
 
 {% block title %}Welcome - Blood Bank Management System{% endblock %}
+{% block bodyclass %}bg-home{% endblock %}
 
 {% block content %}
-<section class="page-heading center">
-  <span class="badge">Team 9 · Software Engineering Project</span>
+<section class="hero">
+  <span class="badge">Team 9 &middot; Software Engineering Project</span>
   <h1>Blood Bank Management System</h1>
-  <p class="muted">
+  <p>
     A centralized platform supporting blood donors, blood bank staff,
-    hospitals and administrators.
+    hospitals and administrators &mdash; so the right blood reaches the right patient, in time.
   </p>
+  <div class="actions">
+    {% if user.is_authenticated %}
+      <a class="btn" href="{% url 'dashboard' %}">Go to My Dashboard <svg class="icon"><use href="#i-arrow"/></svg></a>
+    {% else %}
+      <a class="btn" href="{% url 'register' %}">Become a donor <svg class="icon"><use href="#i-arrow"/></svg></a>
+      <a class="btn btn-ghost" href="{% url 'login' %}">Login</a>
+    {% endif %}
+  </div>
 </section>
 
-<div class="card-grid">
-  <section class="card">
-    <h2>🩸 Blood Donors</h2>
+<div class="card-grid cols-4">
+  <section class="card glass">
+    <div class="icon-tile"><svg class="icon"><use href="#i-drop"/></svg></div>
+    <h2>Blood Donors</h2>
     <p>Access your donor account and manage your donor information.</p>
   </section>
 
-  <section class="card">
-    <h2>🏥 Blood Bank Staff</h2>
+  <section class="card glass">
+    <div class="icon-tile"><svg class="icon"><use href="#i-box"/></svg></div>
+    <h2>Blood Bank Staff</h2>
     <p>Access the staff workspace for blood bank operations.</p>
   </section>
 
-  <section class="card">
-    <h2>🩺 Hospitals and Patients</h2>
+  <section class="card glass">
+    <div class="icon-tile"><svg class="icon"><use href="#i-medical"/></svg></div>
+    <h2>Hospitals and Patients</h2>
     <p>Access the hospital area for available blood request activities.</p>
   </section>
 
-  <section class="card">
-    <h2>⚙️ Administration</h2>
+  <section class="card glass">
+    <div class="icon-tile"><svg class="icon"><use href="#i-shield"/></svg></div>
+    <h2>Administration</h2>
     <p>Role-restricted access for authorized administrators.</p>
   </section>
-</div>
-
-<div class="center" style="margin-top: 28px;">
-  {% if user.is_authenticated %}
-    <a class="btn" href="{% url 'dashboard' %}">Go to My Dashboard</a>
-  {% else %}
-    <a class="btn" href="{% url 'login' %}">Login</a>
-    <a class="btn btn-secondary" href="{% url 'register' %}">Register</a>
-  {% endif %}
 </div>
 {% endblock %}
