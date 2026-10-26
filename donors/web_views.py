@@ -1,12 +1,15 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404
+from django.views import View
 from django.shortcuts import redirect
 from django.views.generic import FormView
 
 from users.models import User
 from users.web_views import RoleDashboardView
 
+from .certificates import certificate_response, user_can_download
 from .forms import DonorProfileForm, RecordDonationForm
 from .models import DonationRecord, DonorProfile
 
@@ -76,3 +79,11 @@ class StaffDashboardView(RoleDashboardView):
                 messages.success(request, f"Donation recorded for {donor.user.username}.")
                 return redirect("dashboard-staff")
         return self.render_to_response(self.get_context_data(**context_kwargs))
+
+
+class DonationCertificateView(LoginRequiredMixin, View):
+    def get(self, request, pk):
+        record = get_object_or_404(DonationRecord.objects.select_related("donor__user"), pk=pk)
+        if not user_can_download(request.user, record):
+            raise PermissionDenied
+        return certificate_response(record)

@@ -1,10 +1,12 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from users.permissions import IsDonor, IsStaffOrAdmin
 
+from .certificates import certificate_response, user_can_download
 from .models import DonationRecord, DonorProfile
 from .serializers import DonationRecordSerializer, DonorListSerializer, DonorProfileSerializer, EligibilitySerializer
 
@@ -93,3 +95,11 @@ class MyDonationsView(generics.ListAPIView):
 
     def get_queryset(self):
         return DonationRecord.objects.filter(donor__user=self.request.user).order_by("-donation_date", "-id")
+
+
+class DonationCertificateApiView(APIView):
+    def get(self, request, pk):
+        record = get_object_or_404(DonationRecord.objects.select_related("donor__user"), pk=pk)
+        if not user_can_download(request.user, record):
+            raise PermissionDenied
+        return certificate_response(record)
