@@ -442,3 +442,66 @@ class DonationTests(TestCase):
         response = self.client.get("/dashboard/donor/")
         self.assertContains(response, "Central Bank")
         self.assertEqual(response.context["donation_count"], 1)
+
+
+class CertificateTests(TestCase):
+    def setUp(self):
+        self.today = timezone.localdate()
+        self.owner = User.objects.create_user("owner", password=PASSWORD, role="DONOR", first_name="Olive", last_name="Owner")
+        self.other = User.objects.create_user("other", password=PASSWORD, role="DONOR")
+        self.staff = User.objects.create_user("staff9", password=PASSWORD, role="STAFF")
+        self.hospital = User.objects.create_user("hosp9", password=PASSWORD, role="HOSPITAL")
+        profile = DonorProfile.objects.create(
+            user=self.owner, blood_group="A+", date_of_birth=years_ago(30), weight_kg=Decimal("65"),
+            gender="FEMALE", address="x", city="Pune",
+        )
+        self.record = DonationRecord.objects.create(
+            donor=profile, donation_date=self.today, blood_bank_location="City Bank", units=2
+        )
+        self.url = f"/donors/donations/{self.record.pk}/certificate/"
+        self.api_url = f"/api/donors/donations/{self.record.pk}/certificate/"
+
+    def test_certificate_number_format(self):
+        from .certificates import certificate_number
+
+        self.assertEqual(certificate_number(self.record), f"BBMS-{self.today.year}-{self.record.pk:05d}")
+
+    def test_owner_downloads_pdf(self):
+        self.client.force_login(self.owner)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertTrue(response.content.startswith(b"%PDF"))
+        self.assertIn("attachment", response["Content-Disposition"])
+        self.assertIn(f"BBMS-certificate-BBMS-{self.today.year}-{self.record.pk:05d}.pdf", response["Content-Disposition"])
+
+    def test_staff_can_download_others_forbidden(self):
+        self.client.force_login(self.staff)
+        self.assertEqual(self.client.get(self.url).status_code, 200)
+        for user in (self.other, self.hospital):
+            self.client.force_login(user)
+            self.assertEqual(self.client.get(self.url).status_code, 403)
+
+    def test_anonymous_redirected_to_login(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/login/", response["Location"])
+
+    def test_missing_record_404(self):
+        self.client.force_login(self.staff)
+        self.assertEqual(self.client.get("/donors/donations/99999/certificate/").status_code, 404)
+
+    def test_api_certificate(self):
+        api = APIClient()
+        self.assertEqual(api.get(self.api_url).status_code, 401)
+        api.force_authenticate(self.other)
+        self.assertEqual(api.get(self.api_url).status_code, 403)
+        api.force_authenticate(self.owner)
+        response = api.get(self.api_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertTrue(response.content.startswith(b"%PDF"))
+
+    def test_dashboard_has_certificate_link(self):
+        self.client.force_login(self.owner)
+        self.assertContains(self.client.get("/dashboard/donor/"), self.url)

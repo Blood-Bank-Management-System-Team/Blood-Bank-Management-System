@@ -3,3 +3,4 @@ djangorestframework
 psycopg[binary]
 gunicorn
 djangorestframework-simplejwt
+reportlab

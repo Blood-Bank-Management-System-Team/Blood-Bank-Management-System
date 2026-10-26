@@ -63,10 +63,10 @@
     <p><strong>Total donations:</strong> {{ donation_count }}</p>
     {% if donations %}
       <table>
-        <thead><tr><th>Date</th><th>Location</th><th>Units</th></tr></thead>
+        <thead><tr><th>Date</th><th>Location</th><th>Units</th><th>Certificate</th></tr></thead>
         <tbody>
           {% for d in donations %}
-            <tr><td>{{ d.donation_date|date:"j M Y" }}</td><td>{{ d.blood_bank_location }}</td><td>{{ d.units }}</td></tr>
+            <tr><td>{{ d.donation_date|date:"j M Y" }}</td><td>{{ d.blood_bank_location }}</td><td>{{ d.units }}</td><td><a href="{% url 'donation-certificate' d.pk %}">Download certificate</a></td></tr>
           {% endfor %}
         </tbody>
       </table>
