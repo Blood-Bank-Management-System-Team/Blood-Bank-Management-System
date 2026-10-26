@@ -1,4 +1,3 @@
-
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
@@ -6,7 +5,9 @@ from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient, APITestCase
 
+from inventory.compatibility import is_blood_compatible
 from inventory.models import BloodStock, BloodUnit
+
 
 User = get_user_model()
 
@@ -151,7 +152,9 @@ class BloodUnitAPITests(APITestCase):
             "bank_location": "Test Blood Bank",
         }
         response = self.client.post(
-            self.list_url, data, format="json"
+            self.list_url,
+            data,
+            format="json",
         )
         self.assertEqual(response.status_code, 201)
         self.assertEqual(
@@ -191,45 +194,56 @@ class BloodUnitAPITests(APITestCase):
         )
         self.client.force_authenticate(user=self.staff)
         response = self.client.get(self.stock_summary_url)
+
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["blood_group"], "O+")
         self.assertEqual(
-            response.data[0]["bank_location"], "Test Blood Bank"
+            response.data[0]["bank_location"],
+            "Test Blood Bank",
         )
         self.assertEqual(response.data[0]["total_quantity"], 5)
 
     def test_stock_summary_excludes_expired_units(self):
         self.unit.expiry_date = "2026-10-20"
         self.unit.save()
+
         self.client.force_authenticate(user=self.staff)
         response = self.client.get(self.stock_summary_url)
+
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 0)
 
     def test_expired_unit_is_flagged(self):
         self.unit.expiry_date = "2026-10-20"
         self.unit.save()
+
         self.client.force_authenticate(user=self.staff)
         response = self.client.get(self.list_url)
+
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.data[0]["is_expired"])
 
     def test_available_filter_excludes_expired_units(self):
         self.unit.expiry_date = "2026-10-20"
         self.unit.save()
+
         self.client.force_authenticate(user=self.staff)
         response = self.client.get(
-            self.list_url, {"available": "true"}
+            self.list_url,
+            {"available": "true"},
         )
+
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 0)
 
     def test_available_filter_includes_non_expired_units(self):
         self.client.force_authenticate(user=self.staff)
         response = self.client.get(
-            self.list_url, {"available": "true"}
+            self.list_url,
+            {"available": "true"},
         )
+
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)
         self.assertFalse(response.data[0]["is_expired"])
@@ -237,9 +251,61 @@ class BloodUnitAPITests(APITestCase):
     def test_available_filter_excludes_zero_quantity_units(self):
         self.unit.quantity = 0
         self.unit.save()
+
         self.client.force_authenticate(user=self.staff)
         response = self.client.get(
-            self.list_url, {"available": "true"}
+            self.list_url,
+            {"available": "true"},
         )
+
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 0)
+
+
+class BloodCompatibilityTests(TestCase):
+    def test_o_negative_is_compatible_with_all_groups(self):
+        recipients = [
+            "O-",
+            "O+",
+            "A-",
+            "A+",
+            "B-",
+            "B+",
+            "AB-",
+            "AB+",
+        ]
+
+        for recipient in recipients:
+            with self.subTest(recipient=recipient):
+                self.assertTrue(
+                    is_blood_compatible("O-", recipient)
+                )
+
+    def test_o_positive_compatibility(self):
+        self.assertTrue(is_blood_compatible("O+", "O+"))
+        self.assertTrue(is_blood_compatible("O+", "A+"))
+        self.assertTrue(is_blood_compatible("O+", "B+"))
+        self.assertTrue(is_blood_compatible("O+", "AB+"))
+
+        self.assertFalse(is_blood_compatible("O+", "A-"))
+        self.assertFalse(is_blood_compatible("O+", "O-"))
+
+    def test_a_positive_compatibility(self):
+        self.assertTrue(is_blood_compatible("A+", "A+"))
+        self.assertTrue(is_blood_compatible("A+", "AB+"))
+        self.assertFalse(is_blood_compatible("A+", "B+"))
+        self.assertFalse(is_blood_compatible("A+", "A-"))
+
+    def test_b_positive_compatibility(self):
+        self.assertTrue(is_blood_compatible("B+", "B+"))
+        self.assertTrue(is_blood_compatible("B+", "AB+"))
+        self.assertFalse(is_blood_compatible("B+", "A+"))
+
+    def test_ab_positive_only_accepts_ab_positive(self):
+        self.assertTrue(is_blood_compatible("AB+", "AB+"))
+        self.assertFalse(is_blood_compatible("AB+", "O+"))
+        self.assertFalse(is_blood_compatible("AB+", "A+"))
+
+    def test_invalid_blood_group_is_incompatible(self):
+        self.assertFalse(is_blood_compatible("INVALID", "O+"))
+        self.assertFalse(is_blood_compatible("O+", "INVALID"))
