@@ -3,9 +3,10 @@ from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
-from django.views.generic import CreateView, TemplateView
+from django.contrib import messages
+from django.views.generic import CreateView, TemplateView, UpdateView
 
-from .forms import RegisterForm
+from .forms import ProfileForm, RegisterForm
 from .models import User
 
 
@@ -64,3 +65,16 @@ class RoleDashboardView(LoginRequiredMixin, TemplateView):
             raise PermissionDenied
 
         return super().dispatch(request, *args, **kwargs)
+
+
+class ProfilePageView(LoginRequiredMixin, UpdateView):
+    form_class = ProfileForm
+    template_name = "users/profile.html"
+
+    def get_object(self, queryset=None):
+        return self.request.user
+
+    def form_valid(self, form):
+        form.save()
+        messages.success(self.request, "Profile updated.")
+        return redirect("profile")

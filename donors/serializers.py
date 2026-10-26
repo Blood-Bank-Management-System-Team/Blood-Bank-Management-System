@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import DonorProfile
+from .models import DonationRecord, DonorProfile
 
 
 class DonorProfileSerializer(serializers.ModelSerializer):
@@ -56,3 +56,12 @@ class DonorListSerializer(serializers.ModelSerializer):
 
     def get_next_eligible_date(self, obj):
         return obj.eligibility().next_eligible_date
+
+
+class DonationRecordSerializer(serializers.ModelSerializer):
+    recorded_by = serializers.CharField(source="recorded_by.username", read_only=True)
+
+    class Meta:
+        model = DonationRecord
+        fields = ("id", "donation_date", "blood_bank_location", "units", "recorded_by", "notes", "created_at")
+        read_only_fields = ("id", "recorded_by", "created_at")

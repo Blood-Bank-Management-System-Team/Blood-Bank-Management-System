@@ -165,3 +165,66 @@ class SkeletonTests(TestCase):
         user = User.objects.create_user(username="donor2", password="pass12345!")
         self.assertNotEqual(user.password, "pass12345!")
         self.assertTrue(user.check_password("pass12345!"))
+
+
+class ProfileApiTests(TestCase):
+    def setUp(self):
+        self.api = APIClient()
+        self.user = User.objects.create_user(
+            "pat", email="pat@example.com", password=STRONG, role="HOSPITAL", phone="9876543210"
+        )
+
+    def login(self):
+        self.api.force_authenticate(self.user)
+
+    def test_requires_authentication(self):
+        self.assertEqual(self.api.get("/api/auth/profile/").status_code, 401)
+        self.assertEqual(self.api.put("/api/auth/profile/", {}, format="json").status_code, 401)
+
+    def test_view_own_profile(self):
+        self.login()
+        data = self.api.get("/api/auth/profile/").json()
+        self.assertEqual(data["username"], "pat")
+        self.assertEqual(data["phone"], "9876543210")
+
+    def test_update_name_email_phone(self):
+        self.login()
+        payload = {"first_name": "Pat", "last_name": "Lee", "email": "new@example.com", "phone": "9123456789"}
+        response = self.api.put("/api/auth/profile/", payload, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertEqual(
+            (self.user.first_name, self.user.last_name, self.user.email, self.user.phone),
+            ("Pat", "Lee", "new@example.com", "9123456789"),
+        )
+
+    def test_invalid_email_rejected(self):
+        self.login()
+        response = self.api.put("/api/auth/profile/", {"email": "not-an-email", "phone": "9123456789"}, format="json")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("email", response.json())
+
+    def test_invalid_phone_rejected(self):
+        self.login()
+        for phone in ("12345", "1234567890", "98765432101", "abcdefghij"):
+            response = self.api.put("/api/auth/profile/", {"email": "a@example.com", "phone": phone}, format="json")
+            self.assertEqual(response.status_code, 400, phone)
+            self.assertIn("phone", response.json())
+
+    def test_cannot_change_role_or_username(self):
+        self.login()
+        payload = {"email": "a@example.com", "phone": "9123456789", "role": "ADMIN", "username": "hacker"}
+        self.assertEqual(self.api.put("/api/auth/profile/", payload, format="json").status_code, 200)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.role, "HOSPITAL")
+        self.assertEqual(self.user.username, "pat")
+
+    def test_profile_page(self):
+        self.client.force_login(self.user)
+        self.assertEqual(self.client.get("/profile/").status_code, 200)
+        response = self.client.post(
+            "/profile/", {"first_name": "P", "last_name": "L", "email": "p@example.com", "phone": "9123456789"}
+        )
+        self.assertEqual(response.status_code, 302)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.first_name, "P")

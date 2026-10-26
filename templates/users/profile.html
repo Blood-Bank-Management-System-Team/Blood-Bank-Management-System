@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}My Profile - BBMS{% endblock %}
+{% block bodyclass %}bg-auth{% endblock %}
+{% block mainclass %}centered{% endblock %}
+{% block content %}
+<section class="card auth-card wide">
+  <div class="icon-tile"><svg class="icon"><use href="#i-user"/></svg></div>
+  <h1>My Profile</h1>
+  <div class="kv"><span>Username</span><strong>{{ user.username }}</strong></div>
+  <div class="kv"><span>Role</span><strong>{{ user.get_role_display }}</strong></div>
+  {% for message in messages %}<p class="badge badge-ok">{{ message }}</p>{% endfor %}
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save changes</button>
+  </form>
+  {% if user.role == "DONOR" %}
+    <p class="form-links"><a href="{% url 'donor-profile' %}">Edit donor &amp; medical details</a></p>
+  {% endif %}
+  <p class="form-links"><a href="{% url 'dashboard' %}">Back to dashboard</a></p>
+</section>
+{% endblock %}

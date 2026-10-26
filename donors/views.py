@@ -1,11 +1,12 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from users.permissions import IsDonor, IsStaffOrAdmin
 
-from .models import DonorProfile
-from .serializers import DonorListSerializer, DonorProfileSerializer, EligibilitySerializer
+from .models import DonationRecord, DonorProfile
+from .serializers import DonationRecordSerializer, DonorListSerializer, DonorProfileSerializer, EligibilitySerializer
 
 NO_PROFILE = {"detail": "Donor profile not found. Complete your donor profile first."}
 
@@ -67,3 +68,28 @@ class DonorListView(generics.ListAPIView):
         if city:
             qs = qs.filter(city__iexact=city.strip())
         return qs
+
+
+class DonorDonationCreateView(APIView):
+    permission_classes = [IsStaffOrAdmin]
+
+    def post(self, request, donor_id):
+        donor = get_object_or_404(DonorProfile, pk=donor_id)
+        serializer = DonationRecordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        result = donor.eligibility()
+        if not result.eligible:
+            return Response(
+                {"detail": "Donor is not currently eligible to donate.", "reasons": result.reasons},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer.save(donor=donor, recorded_by=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class MyDonationsView(generics.ListAPIView):
+    permission_classes = [IsDonor]
+    serializer_class = DonationRecordSerializer
+
+    def get_queryset(self):
+        return DonationRecord.objects.filter(donor__user=self.request.user).order_by("-donation_date", "-id")
