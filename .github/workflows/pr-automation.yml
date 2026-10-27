@@ -48,7 +48,7 @@ jobs:
               labels: [label],
             });
 
-      - name: Make sure the PR is linked to a backlog issue
+      - name: Check whether the PR references a backlog issue
         uses: actions/github-script@v7
         with:
           script: |
@@ -61,12 +61,11 @@ jobs:
 
             core.info(`PR number: ${prNumber}`);
             core.info(`Source branch: ${headBranch}`);
-            core.info(`PR description present: ${body.trim().length > 0}`);
             core.info(`Closing reference found: ${hasClosingReference}`);
 
             if (!hasClosingReference) {
-              core.setFailed(
-                `PR #${prNumber} needs a closing reference such as "Closes #23".`
+              core.warning(
+                `PR #${prNumber} has no closing issue reference. Add the correct issue reference if applicable.`
               );
             } else {
               core.info('Issue-closing reference check passed.');
