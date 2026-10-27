@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Reports - BBMS{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <span class="badge">{{ user.get_role_display }} Portal</span>
+  <h1>Reports &amp; Analytics</h1>
+  <p class="muted">{{ date_from|date:"j M Y" }} &ndash; {{ date_to|date:"j M Y" }}. Stock is a live snapshot; the other figures follow the date range.</p>
+</section>
+
+<section class="card" style="max-width:none;margin-bottom:20px">
+  <form method="get">
+    <div class="card-grid">
+      <label>From <input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}"></label>
+      <label>To <input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}"></label>
+    </div>
+    <button class="btn" type="submit">Apply</button>
+    <a class="btn btn-secondary" href="{% url 'reports' %}">Last 30 days</a>
+    <a class="btn btn-secondary" href="{% url 'reports-export' %}?date_from={{ date_from|date:'Y-m-d' }}&amp;date_to={{ date_to|date:'Y-m-d' }}">Export CSV</a>
+  </form>
+  {% if error %}<p class="badge badge-no">{{ error }} Showing the last 30 days.</p>{% endif %}
+</section>
+
+<div class="card-grid cols-4" style="margin-bottom:20px">
+  <section class="card" id="tile-donations"><p class="muted">Total donations</p><h3>{{ summary.donations.total_donations }}</h3><p class="muted">{{ summary.donations.total_units }} units collected</p></section>
+  <section class="card" id="tile-stock"><p class="muted">Available units</p><h3>{{ summary.stock.total_units }}</h3><p class="muted">In stock now</p></section>
+  <section class="card" id="tile-pending"><p class="muted">Pending requests</p><h3>{{ summary.requests.by_status.pending }}</h3><p class="muted">{{ summary.requests.total }} requests in range</p></section>
+  <section class="card" id="tile-wasted"><p class="muted">Units wasted</p><h3>{{ summary.wastage.total_units }}</h3><p class="muted">Disposed in range</p></section>
+</div>
+
+<div class="card-grid">
+  <section class="card">
+    <h2>Donations per day</h2>
+    {% if has_donations %}<div style="position:relative;height:260px"><canvas id="chart-donations" aria-label="Donations per day"></canvas></div>
+    {% else %}<p class="muted">No data for this period.</p>{% endif %}
+  </section>
+  <section class="card">
+    <h2>Available stock by blood group</h2>
+    {% if has_stock %}<div style="position:relative;height:260px"><canvas id="chart-stock" aria-label="Available stock by blood group"></canvas></div>
+    {% else %}<p class="muted">No data for this period.</p>{% endif %}
+    {% if summary.stock.low_stock_groups %}
+      <p class="badge badge-no">Low stock: {{ summary.stock.low_stock_groups|join:", " }}</p>
+    {% else %}<p class="muted">No groups are below their low-stock threshold.</p>{% endif %}
+  </section>
+  <section class="card">
+    <h2>Requests by status</h2>
+    {% if has_requests %}<div style="position:relative;height:260px"><canvas id="chart-requests" aria-label="Requests by status"></canvas></div>
+      <p class="muted">Emergency: {{ summary.requests.by_priority.emergency }} &middot; Scheduled: {{ summary.requests.by_priority.scheduled }}</p>
+    {% else %}<p class="muted">No data for this period.</p>{% endif %}
+  </section>
+  <section class="card">
+    <h2>Wastage by blood group</h2>
+    {% if has_wastage %}<div style="position:relative;height:260px"><canvas id="chart-wastage" aria-label="Wastage by blood group"></canvas></div>
+      <p class="muted">Expired: {{ summary.wastage.by_reason.expired }} &middot; Other: {{ summary.wastage.by_reason.other }}</p>
+    {% else %}<p class="muted">No data for this period.</p>{% endif %}
+  </section>
+</div>
+
+{{ chart_data|json_script:"chart-data" }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  if (typeof Chart === "undefined") return;
+  var data = JSON.parse(document.getElementById("chart-data").textContent);
+  var crimson = "#a30f1d", muted = "#c98a92", amber = "#e08a00";
+  var opts = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+  };
+  function make(id, type, labels, values, colors) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    new Chart(el, { type: type, options: opts, data: { labels: labels, datasets: [{
+      data: values, backgroundColor: colors, borderColor: colors, tension: 0.25
+    }] } });
+  }
+  make("chart-donations", "line", data.donations.labels, data.donations.units, crimson);
+  make("chart-stock", "bar", data.stock.labels, data.stock.units,
+       data.stock.low.map(function (low) { return low ? amber : crimson; }));
+  make("chart-requests", "bar", data.requests.labels, data.requests.counts, crimson);
+  make("chart-wastage", "bar", data.wastage.labels, data.wastage.units, muted);
+})();
+</script>
+{% endblock %}
