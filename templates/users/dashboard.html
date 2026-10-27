@@ -1,11 +1,66 @@
+
 {% extends "base.html" %}
+
 {% block title %}Dashboard - BBMS{% endblock %}
+
 {% block content %}
 <h1>Welcome, {{ user.get_full_name|default:user.username }}</h1>
-<p class="center">Role: <strong>{{ user.get_role_display }}</strong></p>
-<p class="center">This dashboard is a placeholder.</p>
+
+<p class="center">
+    Role: <strong>{{ user.get_role_display }}</strong>
+</p>
+
+{% if user.role == "ADMIN" %}
+<section>
+    <h2>Low-Stock Alerts</h2>
+
+    {% if low_stock_alerts %}
+    <table>
+        <thead>
+            <tr>
+                <th>Blood Group</th>
+                <th>Available Units</th>
+                <th>Minimum Required</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for alert in low_stock_alerts %}
+            <tr>
+                <td>{{ alert.blood_group }}</td>
+                <td>{{ alert.available_quantity }}</td>
+                <td>{{ alert.minimum_quantity }}</td>
+                <td>Low stock</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No low-stock alerts. All configured blood groups meet their minimum thresholds.</p>
+    {% endif %}
+
+    <h2>Admin Notifications</h2>
+
+    {% if admin_notifications %}
+    <ul>
+        {% for notification in admin_notifications %}
+        <li>
+            <strong>{{ notification.blood_group }}:</strong>
+            {{ notification.message }}
+            <small>
+                — {{ notification.created_at|date:"d M Y, H:i" }}
+            </small>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No unread admin notifications.</p>
+    {% endif %}
+</section>
+{% endif %}
+
 <form method="post" action="{% url 'logout' %}" class="center">
-  {% csrf_token %}
-  <button type="submit">Logout</button>
+    {% csrf_token %}
+    <button type="submit">Logout</button>
 </form>
 {% endblock %}
