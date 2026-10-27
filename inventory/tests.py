@@ -1,8 +1,107 @@
 
-from rest_framework.test import APITestCase
+from datetime import timedelta
 
-from users.models import User
-from .models import BloodUnit
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.utils import timezone
+from rest_framework.test import APIClient, APITestCase
+
+from inventory.models import BloodStock, BloodUnit
+
+User = get_user_model()
+
+
+class BloodAvailabilityTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.hospital = User.objects.create_user(
+            username="hospital1",
+            password="TestPass123!",
+            role="HOSPITAL",
+        )
+        self.donor = User.objects.create_user(
+            username="donor1",
+            password="TestPass123!",
+            role="DONOR",
+        )
+        self.client.force_authenticate(user=self.hospital)
+
+        today = timezone.localdate()
+
+        BloodStock.objects.create(
+            blood_group="O+",
+            location="Bengaluru",
+            available_units=5,
+            collection_date=today - timedelta(days=2),
+            expiry_date=today + timedelta(days=30),
+            status="AVAILABLE",
+        )
+        BloodStock.objects.create(
+            blood_group="O+",
+            location="Bengaluru",
+            available_units=3,
+            collection_date=today - timedelta(days=1),
+            expiry_date=today + timedelta(days=20),
+            status="AVAILABLE",
+        )
+        BloodStock.objects.create(
+            blood_group="O+",
+            location="Bengaluru",
+            available_units=10,
+            collection_date=today - timedelta(days=5),
+            expiry_date=today + timedelta(days=20),
+            status="RESERVED",
+        )
+        BloodStock.objects.create(
+            blood_group="O+",
+            location="Bengaluru",
+            available_units=7,
+            collection_date=today - timedelta(days=40),
+            expiry_date=today - timedelta(days=1),
+            status="AVAILABLE",
+        )
+
+    def test_search_sums_available_unexpired_stock(self):
+        response = self.client.get(
+            "/api/blood/availability/",
+            {"blood_group": "O+", "location": "Bengaluru"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["available_units"], 8)
+
+    def test_missing_parameters_rejected(self):
+        response = self.client.get("/api/blood/availability/")
+        self.assertEqual(response.status_code, 400)
+
+    def test_invalid_blood_group_rejected(self):
+        response = self.client.get(
+            "/api/blood/availability/",
+            {"blood_group": "Z+", "location": "Bengaluru"},
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_donor_cannot_search(self):
+        self.client.force_authenticate(user=self.donor)
+        response = self.client.get(
+            "/api/blood/availability/",
+            {"blood_group": "O+", "location": "Bengaluru"},
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_unauthenticated_user_cannot_search(self):
+        self.client.force_authenticate(user=None)
+        response = self.client.get(
+            "/api/blood/availability/",
+            {"blood_group": "O+", "location": "Bengaluru"},
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_no_matching_stock_returns_not_found(self):
+        response = self.client.get(
+            "/api/blood/availability/",
+            {"blood_group": "A+", "location": "Bengaluru"},
+        )
+        self.assertEqual(response.status_code, 404)
 
 
 class BloodUnitAPITests(APITestCase):
@@ -54,7 +153,6 @@ class BloodUnitAPITests(APITestCase):
         response = self.client.post(
             self.list_url, data, format="json"
         )
-
         self.assertEqual(response.status_code, 201)
         self.assertEqual(
             BloodUnit.objects.get(id=response.data["id"]).created_by,
@@ -68,7 +166,6 @@ class BloodUnitAPITests(APITestCase):
             {"quantity": 5},
             format="json",
         )
-
         self.assertEqual(response.status_code, 200)
         self.unit.refresh_from_db()
         self.assertEqual(self.unit.quantity, 5)
@@ -77,7 +174,6 @@ class BloodUnitAPITests(APITestCase):
     def test_staff_can_delete_blood_unit(self):
         self.client.force_authenticate(user=self.staff)
         response = self.client.delete(self.detail_url)
-
         self.assertEqual(response.status_code, 204)
         self.assertFalse(
             BloodUnit.objects.filter(id=self.unit.id).exists()
@@ -93,10 +189,8 @@ class BloodUnitAPITests(APITestCase):
             created_by=self.staff,
             updated_by=self.staff,
         )
-
         self.client.force_authenticate(user=self.staff)
         response = self.client.get(self.stock_summary_url)
-
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["blood_group"], "O+")
@@ -108,32 +202,26 @@ class BloodUnitAPITests(APITestCase):
     def test_stock_summary_excludes_expired_units(self):
         self.unit.expiry_date = "2026-10-20"
         self.unit.save()
-
         self.client.force_authenticate(user=self.staff)
         response = self.client.get(self.stock_summary_url)
-
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 0)
 
     def test_expired_unit_is_flagged(self):
         self.unit.expiry_date = "2026-10-20"
         self.unit.save()
-
         self.client.force_authenticate(user=self.staff)
         response = self.client.get(self.list_url)
-
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.data[0]["is_expired"])
 
     def test_available_filter_excludes_expired_units(self):
         self.unit.expiry_date = "2026-10-20"
         self.unit.save()
-
         self.client.force_authenticate(user=self.staff)
         response = self.client.get(
             self.list_url, {"available": "true"}
         )
-
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 0)
 
@@ -142,7 +230,6 @@ class BloodUnitAPITests(APITestCase):
         response = self.client.get(
             self.list_url, {"available": "true"}
         )
-
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)
         self.assertFalse(response.data[0]["is_expired"])
@@ -150,11 +237,9 @@ class BloodUnitAPITests(APITestCase):
     def test_available_filter_excludes_zero_quantity_units(self):
         self.unit.quantity = 0
         self.unit.save()
-
         self.client.force_authenticate(user=self.staff)
         response = self.client.get(
             self.list_url, {"available": "true"}
         )
-
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 0)

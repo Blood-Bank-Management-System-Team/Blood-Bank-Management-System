@@ -1,26 +1,49 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Blood Bank Management System</title>
-  <style>
-    body { font-family: system-ui, sans-serif; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #fdf2f2; color: #222; }
-    main { text-align: center; padding: 1.5rem; max-width: 36rem; }
-    h1 { color: #b71c1c; font-size: clamp(1.6rem, 5vw, 2.5rem); }
-    nav a { display: inline-block; margin: .5rem; padding: .6rem 1.2rem; background: #b71c1c; color: #fff; border-radius: 6px; text-decoration: none; }
-  </style>
-</head>
-<body>
-  <main>
-    <h1>Blood Bank Management System</h1>
-    <p>Team 9 &mdash; project skeleton is running.</p>
-    <nav>
-      <a href="/login/">Login</a>
-      <a href="/register/">Register</a>
-      <a href="/admin/">Admin</a>
-      <a href="/api/health/">API Health</a>
-    </nav>
-  </main>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Welcome - Blood Bank Management System{% endblock %}
+{% block bodyclass %}bg-home{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <span class="badge">Team 9 &middot; Software Engineering Project</span>
+  <h1>Blood Bank Management System</h1>
+  <p>
+    A centralized platform supporting blood donors, blood bank staff,
+    hospitals and administrators &mdash; so the right blood reaches the right patient, in time.
+  </p>
+  <div class="actions">
+    {% if user.is_authenticated %}
+      <a class="btn" href="{% url 'dashboard' %}">Go to My Dashboard <svg class="icon"><use href="#i-arrow"/></svg></a>
+    {% else %}
+      <a class="btn" href="{% url 'register' %}">Become a donor <svg class="icon"><use href="#i-arrow"/></svg></a>
+      <a class="btn btn-ghost" href="{% url 'login' %}">Login</a>
+    {% endif %}
+  </div>
+</section>
+
+<div class="card-grid cols-4">
+  <section class="card glass">
+    <div class="icon-tile"><svg class="icon"><use href="#i-drop"/></svg></div>
+    <h2>Blood Donors</h2>
+    <p>Access your donor account and manage your donor information.</p>
+  </section>
+
+  <section class="card glass">
+    <div class="icon-tile"><svg class="icon"><use href="#i-box"/></svg></div>
+    <h2>Blood Bank Staff</h2>
+    <p>Access the staff workspace for blood bank operations.</p>
+  </section>
+
+  <section class="card glass">
+    <div class="icon-tile"><svg class="icon"><use href="#i-medical"/></svg></div>
+    <h2>Hospitals and Patients</h2>
+    <p>Access the hospital area for available blood request activities.</p>
+  </section>
+
+  <section class="card glass">
+    <div class="icon-tile"><svg class="icon"><use href="#i-shield"/></svg></div>
+    <h2>Administration</h2>
+    <p>Role-restricted access for authorized administrators.</p>
+  </section>
+</div>
+{% endblock %}

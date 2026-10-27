@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Audit Log - BBMS{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <span class="badge">Administrator Portal</span>
+  <h1>Audit Log</h1>
+  <p class="muted">Critical actions recorded across the system, newest first.</p>
+</section>
+
+<section class="card" style="max-width:none">
+  <form method="get">
+    <div class="card-grid">
+      <label>User <input type="text" name="user" value="{{ filters.user }}" placeholder="username"></label>
+      <label>Action
+        <select name="action">
+          <option value="">All</option>
+          {% for value, label in actions %}
+            <option value="{{ value }}" {% if filters.action == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Model <input type="text" name="model" value="{{ filters.model }}" placeholder="e.g. DonorProfile"></label>
+      <label>From <input type="date" name="date_from" value="{{ filters.date_from }}"></label>
+      <label>To <input type="date" name="date_to" value="{{ filters.date_to }}"></label>
+    </div>
+    <button class="btn" type="submit">Filter</button>
+    <a class="btn btn-secondary" href="{% url 'audit-logs' %}">Reset</a>
+  </form>
+  {% if error %}<p class="badge badge-no">{{ error }}</p>{% endif %}
+
+  <div style="overflow-x:auto;margin-top:16px">
+    <table style="width:100%;border-collapse:collapse;min-width:640px">
+      <thead>
+        <tr><th align="left">Time</th><th align="left">User</th><th align="left">Action</th><th align="left">Model</th><th align="left">Object</th><th align="left">Description</th><th align="left">IP</th></tr>
+      </thead>
+      <tbody>
+        {% for log in page_obj %}
+          <tr>
+            <td>{{ log.timestamp|date:"j M Y H:i" }}</td>
+            <td>{{ log.user.username|default:"system" }}</td>
+            <td>{{ log.get_action_display }}</td>
+            <td>{{ log.model_name }}</td>
+            <td>{{ log.object_id }}</td>
+            <td>{{ log.description }}</td>
+            <td>{{ log.ip_address|default:"" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="muted">No log entries match.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+    <p>
+      {% if page_obj.has_previous %}<a class="btn btn-secondary" href="?{{ querystring }}&page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      {% if page_obj.has_next %}<a class="btn btn-secondary" href="?{{ querystring }}&page={{ page_obj.next_page_number }}">Next</a>{% endif %}
+    </p>
+  {% endif %}
+</section>
+{% endblock %}

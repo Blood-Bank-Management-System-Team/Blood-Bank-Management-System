@@ -1,11 +1,17 @@
 {% extends "base.html" %}
 {% block title %}Donor Profile - BBMS{% endblock %}
+{% block bodyclass %}bg-auth{% endblock %}
+{% block mainclass %}centered{% endblock %}
 {% block content %}
-<h1>Donor Profile</h1>
-<form method="post">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit">Save profile</button>
-</form>
-<p class="center"><a href="{% url 'dashboard-donor' %}">Back to dashboard</a></p>
+<section class="card auth-card wide">
+  <div class="icon-tile"><svg class="icon"><use href="#i-clipboard"/></svg></div>
+  <h1>Donor Profile</h1>
+  <p class="lead">Your details and health answers are used to check your donation eligibility.</p>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save profile</button>
+  </form>
+  <p class="form-links"><a href="{% url 'dashboard-donor' %}">Back to dashboard</a></p>
+</section>
 {% endblock %}

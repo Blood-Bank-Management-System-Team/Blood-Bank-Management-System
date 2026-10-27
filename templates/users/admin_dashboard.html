@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - BBMS{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <span class="badge">Administrator Portal</span>
+  <h1>Welcome, {{ user.get_full_name|default:user.username }}</h1>
+  <p class="muted">
+    Access administrative information and system management tools.
+  </p>
+</section>
+
+<div class="card-grid">
+  <section class="card">
+    <div class="icon-tile"><svg class="icon"><use href="#i-users"/></svg></div>
+    <h2>User Management</h2>
+    <p>Manage system users and review account information.</p>
+    <a class="btn" href="{% url 'admin:index' %}">Open Django Admin</a>
+  </section>
+
+  <section class="card">
+    <div class="icon-tile"><svg class="icon"><use href="#i-drop"/></svg></div>
+    <h2>Blood Bank Operations</h2>
+    <p>Access the registered application data through authorized administration tools.</p>
+    <p class="muted">Inventory and request workflows are managed through their respective modules.</p>
+  </section>
+
+  <section class="card">
+    <div class="icon-tile"><svg class="icon"><use href="#i-chart"/></svg></div>
+    <h2>System Overview</h2>
+    <p>Review available records and administrative information.</p>
+    <a class="btn" href="{% url 'audit-logs' %}">View Audit Log</a>
+  </section>
+
+  <section class="card">
+    <div class="icon-tile"><svg class="icon"><use href="#i-shield"/></svg></div>
+    <h2>Administrator Account</h2>
+    <div class="kv"><span>Username</span><strong>{{ user.username }}</strong></div>
+    <div class="kv"><span>Role</span><strong>{{ user.get_role_display }}</strong></div>
+  </section>
+</div>
+{% endblock %}

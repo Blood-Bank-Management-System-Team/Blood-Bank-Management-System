@@ -1,11 +1,17 @@
 {% extends "base.html" %}
 {% block title %}Register - BBMS{% endblock %}
+{% block bodyclass %}bg-auth{% endblock %}
+{% block mainclass %}centered{% endblock %}
 {% block content %}
-<h1>Register</h1>
-<form method="post">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit">Create account</button>
-</form>
-<p class="center">Already registered? <a href="{% url 'login' %}">Login</a> &middot; <a href="{% url 'home' %}">Home</a></p>
+<section class="card auth-card">
+  <div class="icon-tile"><svg class="icon"><use href="#i-drop"/></svg></div>
+  <h1>Register</h1>
+  <p class="lead">Create your BBMS account as a donor or hospital.</p>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Create account</button>
+  </form>
+  <p class="form-links">Already registered? <a href="{% url 'login' %}">Login</a> &middot; <a href="{% url 'home' %}">Home</a></p>
+</section>
 {% endblock %}

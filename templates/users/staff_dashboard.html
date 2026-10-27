@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Staff Dashboard - BBMS{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <span class="badge">Staff Portal</span>
+  <h1>Welcome, {{ user.get_full_name|default:user.username }}</h1>
+  <p class="muted">
+    Manage blood bank operations from your staff workspace.
+  </p>
+</section>
+
+<div class="card-grid">
+  <section class="card">
+    <div class="icon-tile"><svg class="icon"><use href="#i-drop"/></svg></div>
+    <h2>Record donation</h2>
+    {% for message in messages %}<p class="badge badge-ok">{{ message }}</p>{% endfor %}
+    <form method="post">
+      {% csrf_token %}
+      {{ donation_form.as_p }}
+      <button type="submit">Record donation</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <div class="icon-tile"><svg class="icon"><use href="#i-box"/></svg></div>
+    <h2>Blood Inventory</h2>
+    <p>Access the inventory workspace to manage available blood units.</p>
+    <p class="muted">Inventory management features will be available through the inventory module.</p>
+  </section>
+
+  <section class="card">
+    <div class="icon-tile"><svg class="icon"><use href="#i-drop"/></svg></div>
+    <h2>Blood Requests</h2>
+    <p>Review the blood-request workflow for hospital requirements.</p>
+    <p class="muted">Request processing features will be connected as the module develops.</p>
+  </section>
+
+  <section class="card">
+    <div class="icon-tile"><svg class="icon"><use href="#i-users"/></svg></div>
+    <h2>Donor Services</h2>
+    <p>Support donor-related blood bank operations.</p>
+    <p class="muted">Use the existing donor module for available donor functionality.</p>
+  </section>
+
+  <section class="card">
+    <a class="btn btn-secondary" href="{% url 'profile' %}">My Profile</a>
+  </section>
+
+  <section class="card">
+    <div class="icon-tile"><svg class="icon"><use href="#i-lock"/></svg></div>
+    <h2>Staff Account</h2>
+    <div class="kv"><span>Username</span><strong>{{ user.username }}</strong></div>
+    <div class="kv"><span>Role</span><strong>{{ user.get_role_display }}</strong></div>
+  </section>
+</div>
+{% endblock %}
