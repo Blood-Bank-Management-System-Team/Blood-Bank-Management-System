@@ -269,7 +269,16 @@ class ReportsTests(TestCase):
 
         req = data["requests"]
         self.assertEqual(req["total"], 5)
-        self.assertEqual(req["by_status"], {"pending": 2, "approved": 1, "rejected": 1, "fulfilled": 1})
+        self.assertEqual(
+            req["by_status"],
+            {
+                "pending": 2,
+                "approved": 1,
+                "rejected": 1,
+                "fulfilled": 1,
+                "cancelled": 0,
+            },
+        )
         self.assertEqual(req["by_priority"], {"emergency": 2, "scheduled": 3})
 
         wastage = data["wastage"]
