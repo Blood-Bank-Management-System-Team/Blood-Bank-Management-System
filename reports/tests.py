@@ -173,3 +173,197 @@ class AuditAdminTests(TestCase):
         self.assertFalse(model_admin.has_change_permission(request, log))
         self.assertFalse(model_admin.has_delete_permission(request, log))
         self.assertTrue(model_admin.has_view_permission(request, log))
+
+
+# ---------- BB-17: reports and analytics ----------
+from django.db import connection
+from django.test import Client
+from django.test.utils import CaptureQueriesContext
+
+from bloodrequests.models import BloodRequest
+from donors.models import DonationRecord
+from inventory.models import BloodStock
+from notifications.models import LowStockThreshold
+
+
+class ReportsTests(TestCase):
+    URL = "/api/reports/summary/"
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.today = timezone.localdate()
+        cls.admin = User.objects.create_user("rep_admin", password=PASSWORD, role="ADMIN")
+        cls.staff = User.objects.create_user("rep_staff", password=PASSWORD, role="STAFF")
+        cls.hospital = User.objects.create_user("rep_hosp", password=PASSWORD, role="HOSPITAL")
+        cls.donor_user = User.objects.create_user("rep_donor", password=PASSWORD, role="DONOR")
+        donor = DonorProfile.objects.create(
+            user=cls.donor_user, blood_group="O+", date_of_birth=date(1995, 1, 1),
+            weight_kg=Decimal("60"), gender="MALE", address="x", city="Pune",
+        )
+
+        def days_ago(n):
+            return cls.today - timedelta(days=n)
+
+        # donations: 3 in the default range (units 1+2+1), 1 old
+        for n, units in ((2, 1), (2, 2), (10, 1), (60, 2)):
+            DonationRecord.objects.create(
+                donor=donor, donation_date=days_ago(n), blood_bank_location="Main", units=units)
+
+        def stock(group, units, status="AVAILABLE", expiry=None):
+            return BloodStock.objects.create(
+                blood_group=group, location="Main", available_units=units,
+                collection_date=days_ago(30), expiry_date=expiry or days_ago(-20), status=status,
+            )
+
+        stock("O+", 10)
+        stock("O+", 5)                       # O+ total 15
+        stock("A+", 3)                       # below the A+ threshold of 5
+        stock("B+", 7, status="RESERVED")    # excluded
+        stock("B+", 4, expiry=days_ago(5))   # excluded (expired)
+        stock("AB+", 6, status="DISPOSED")   # excluded from stock, counted as wastage
+        LowStockThreshold.objects.create(blood_group="A+", minimum_quantity=5)
+        LowStockThreshold.objects.create(blood_group="O+", minimum_quantity=5)
+
+        # wastage: AB+ 6 units disposed 3 days ago after expiring ("expired");
+        # O- 2 units disposed 40 days ago while still in date ("other")
+        old = stock("O-", 2, status="DISPOSED")
+        BloodStock.objects.filter(blood_group="AB+", status="DISPOSED").update(
+            updated_at=timezone.now() - timedelta(days=3), expiry_date=days_ago(20))
+        BloodStock.objects.filter(pk=old.pk).update(updated_at=timezone.now() - timedelta(days=40))
+
+        def req(group, priority, status, age=1):
+            r = BloodRequest.objects.create(
+                requester=cls.hospital, blood_group=group, units=2, location="H",
+                priority=priority, status=status)
+            BloodRequest.objects.filter(pk=r.pk).update(created_at=timezone.now() - timedelta(days=age))
+
+        req("O+", "emergency", "pending")
+        req("A+", "scheduled", "pending")
+        req("B+", "emergency", "approved")
+        req("O+", "scheduled", "rejected")
+        req("O+", "scheduled", "fulfilled")
+        req("O+", "emergency", "fulfilled", age=90)  # outside the default range
+
+    def api(self, user=None, **params):
+        client = APIClient()
+        if user:
+            client.force_authenticate(user)
+        return client.get(self.URL, params)
+
+    # --- numbers ---
+    def test_summary_totals(self):
+        data = self.api(self.admin).json()
+        self.assertEqual(data["donations"]["total_units"], 4)
+        self.assertEqual(data["donations"]["total_donations"], 3)
+        self.assertEqual(len(data["donations"]["daily"]), 31)
+        by_day = {r["date"]: r for r in data["donations"]["daily"]}
+        two = (self.today - timedelta(days=2)).isoformat()
+        self.assertEqual((by_day[two]["units"], by_day[two]["donations"]), (3, 2))
+
+        stock = {g["blood_group"]: g["units"] for g in data["stock"]["groups"]}
+        self.assertEqual(stock["O+"], 15)
+        self.assertEqual(stock["A+"], 3)
+        self.assertEqual(stock["B+"], 0)   # reserved and expired excluded
+        self.assertEqual(stock["AB+"], 0)  # disposed excluded
+        self.assertEqual(data["stock"]["total_units"], 18)
+
+        req = data["requests"]
+        self.assertEqual(req["total"], 5)
+        self.assertEqual(req["by_status"], {"pending": 2, "approved": 1, "rejected": 1, "fulfilled": 1})
+        self.assertEqual(req["by_priority"], {"emergency": 2, "scheduled": 3})
+
+        wastage = data["wastage"]
+        self.assertEqual(wastage["total_units"], 6)
+        self.assertEqual(wastage["by_blood_group"]["AB+"], 6)
+        self.assertEqual(wastage["by_blood_group"]["O-"], 0)  # outside the range
+        self.assertEqual(wastage["by_reason"], {"expired": 6, "other": 0})
+
+    def test_low_stock_group_flagged(self):
+        stock = self.api(self.admin).json()["stock"]
+        self.assertEqual(stock["low_stock_groups"], ["A+"])
+        flags = {g["blood_group"]: g["low_stock"] for g in stock["groups"]}
+        self.assertTrue(flags["A+"])
+        self.assertFalse(flags["O+"])
+        self.assertFalse(flags["B+"])  # no threshold configured
+
+    def test_date_filter_changes_numbers(self):
+        wide = self.api(self.admin, date_from=(self.today - timedelta(days=100)).isoformat(),
+                        date_to=self.today.isoformat()).json()
+        self.assertEqual(wide["donations"]["total_units"], 6)
+        self.assertEqual(wide["wastage"]["by_blood_group"]["O-"], 2)
+        self.assertEqual(wide["wastage"]["by_reason"], {"expired": 6, "other": 2})
+        self.assertEqual(wide["requests"]["total"], 6)
+        narrow = self.api(self.admin, date_from=(self.today - timedelta(days=5)).isoformat(),
+                          date_to=self.today.isoformat()).json()
+        self.assertEqual(narrow["donations"]["total_units"], 3)
+
+    # --- validation and permissions ---
+    def test_invalid_dates_return_400(self):
+        r = self.api(self.admin, date_from="2024-13-45")
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("YYYY-MM-DD", str(r.json()))
+        r = self.api(self.admin, date_from="2025-02-01", date_to="2025-01-01")
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("date_from", r.json())
+
+    def test_permissions(self):
+        self.assertEqual(self.api().status_code, 401)
+        self.assertEqual(self.api(self.donor_user).status_code, 403)
+        self.assertEqual(self.api(self.hospital).status_code, 403)
+        self.assertEqual(self.api(self.admin).status_code, 200)
+        self.assertEqual(self.api(self.staff).status_code, 200)
+
+    # --- page and CSV ---
+    def test_page_renders_for_admin(self):
+        c = Client()
+        c.force_login(self.admin)
+        r = c.get("/reports/")
+        self.assertEqual(r.status_code, 200)
+        html = r.content.decode()
+        for canvas in ("chart-donations", "chart-stock", "chart-requests", "chart-wastage"):
+            self.assertIn(f'id="{canvas}"', html)
+        for tile in ("tile-donations", "tile-stock", "tile-pending", "tile-wasted"):
+            self.assertIn(f'id="{tile}"', html)
+        self.assertIn('id="chart-data"', html)
+        self.assertIn("chart.js@4.4.1", html)
+        self.assertIn("Low stock: A+", html)
+
+    def test_page_empty_state_and_access(self):
+        c = Client()
+        self.assertEqual(c.get("/reports/").status_code, 302)
+        c.force_login(self.hospital)
+        self.assertEqual(c.get("/reports/").status_code, 403)
+        c.force_login(self.staff)
+        r = c.get("/reports/", {"date_from": "2000-01-01", "date_to": "2000-01-01"})
+        self.assertContains(r, "No data for this period")
+
+    def test_csv_export(self):
+        c = Client()
+        c.force_login(self.staff)
+        r = c.get("/reports/export.csv")
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r["Content-Type"].startswith("text/csv"))
+        body = r.content.decode()
+        for header in ("Donations collected", "Donations per day", "Available stock by blood group",
+                       "Blood requests by status", "Blood requests by priority",
+                       "Wastage by blood group", "Wastage by reason"):
+            self.assertIn(header, body)
+        c.force_login(self.donor_user)
+        self.assertEqual(c.get("/reports/export.csv").status_code, 403)
+        c.force_login(self.admin)
+        self.assertEqual(c.get("/reports/export.csv", {"date_from": "bad"}).status_code, 400)
+
+    # --- performance ---
+    def test_summary_query_count_is_small_and_fixed(self):
+        client = APIClient()
+        client.force_authenticate(self.admin)
+        with CaptureQueriesContext(connection) as first:
+            client.get(self.URL)
+        self.assertLessEqual(len(first), 10, [q["sql"] for q in first])
+        for group in ("A-", "B-", "AB-"):  # more data must not add queries
+            BloodStock.objects.create(
+                blood_group=group, location="Main", available_units=1,
+                collection_date=self.today, expiry_date=self.today + timedelta(days=9))
+        with CaptureQueriesContext(connection) as second:
+            client.get(self.URL)
+        self.assertEqual(len(first), len(second))
