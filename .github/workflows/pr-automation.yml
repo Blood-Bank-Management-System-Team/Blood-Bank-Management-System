@@ -48,16 +48,25 @@ jobs:
           script: |
             const body = context.payload.pull_request.body || '';
             const prNumber = context.payload.pull_request.number;
-            const closingReference = /\b(?:close[sd]?|fix(?:es|ed)?|resolve[sd]?)\s+#\d+\b/i;
 
-            core.info(`Checking PR #${prNumber} for an issue-closing reference.`);
-            core.info(`PR description is present: ${body.trim().length > 0}`);
-            core.info(`Closing reference found: ${closingReference.test(body)}`);
+            const skipIssueLink =
+              /^\s*Skip-Issue-Link:\s*true\s*$/im.test(body);
 
-            if (!closingReference.test(body)) {
+            const closingReference =
+              /\b(?:close[sd]?|fix(?:es|ed)?|resolve[sd]?)\s+#\d+\b/i;
+
+            const hasClosingReference = closingReference.test(body);
+
+            core.info(`Checking PR #${prNumber} for an issue link.`);
+            core.info(`Skip-Issue-Link opt-out: ${skipIssueLink}`);
+            core.info(`Closing reference found: ${hasClosingReference}`);
+
+            if (skipIssueLink) {
+              core.info('Issue-link check skipped by explicit opt-out.');
+            } else if (!hasClosingReference) {
               core.setFailed(
-                `PR #${prNumber} needs an issue-closing reference, such as "Closes #23". ` +
-                `Check the PR description and ensure the reference is plain text.`
+                `PR #${prNumber} needs an issue-closing reference, such as "Closes #23", ` +
+                'or the explicit opt-out "Skip-Issue-Link: true" for maintenance PRs.'
               );
             } else {
               core.info('Issue-closing reference check passed.');
