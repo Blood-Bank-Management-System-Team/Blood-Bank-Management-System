@@ -387,6 +387,50 @@ class BloodUnitAPITests(APITestCase):
         )
 
 
+    def test_sort_by_blood_group_ascending(self):
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(
+            self.list_url,
+            {"sort_by": "blood_group", "sort_order": "asc"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        groups = [item["blood_group"] for item in response.data]
+        self.assertEqual(groups, sorted(groups))
+
+    def test_sort_by_blood_group_descending(self):
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(
+            self.list_url,
+            {"sort_by": "blood_group", "sort_order": "desc"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        groups = [item["blood_group"] for item in response.data]
+        self.assertEqual(groups, sorted(groups, reverse=True))
+
+    def test_sort_by_location_ascending(self):
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(
+            self.list_url,
+            {"sort_by": "location", "sort_order": "asc"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        locations = [item["bank_location"] for item in response.data]
+        self.assertEqual(locations, sorted(locations))
+
+    def test_sort_by_location_descending(self):
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(
+            self.list_url,
+            {"sort_by": "location", "sort_order": "desc"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        locations = [item["bank_location"] for item in response.data]
+        self.assertEqual(locations, sorted(locations, reverse=True))
+
 class BloodCompatibilityTests(TestCase):
     def test_o_negative_is_compatible_with_all_groups(self):
         recipients = [
