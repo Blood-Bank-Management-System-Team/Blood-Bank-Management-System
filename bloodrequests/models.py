@@ -25,6 +25,7 @@ class BloodRequest(models.Model):
         APPROVED = "approved", "Approved"
         REJECTED = "rejected", "Rejected"
         FULFILLED = "fulfilled", "Fulfilled"
+        CANCELLED = "cancelled", "Cancelled"
 
     request_id = models.UUIDField(
         default=uuid.uuid4,
@@ -62,3 +63,34 @@ class BloodRequest(models.Model):
 
     def __str__(self):
         return f"{self.request_id} - {self.blood_group} ({self.status})"
+
+class BloodReservation(models.Model):
+    blood_request = models.ForeignKey(
+        BloodRequest,
+        on_delete=models.PROTECT,
+        related_name="reservations",
+    )
+    blood_stock = models.ForeignKey(
+        "inventory.BloodStock",
+        on_delete=models.PROTECT,
+        related_name="reservations",
+    )
+    units = models.PositiveIntegerField()
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    released_at = models.DateTimeField(null=True, blank=True)
+    consumed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(units__gt=0),
+                name="reservation_units_positive",
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"Reservation for {self.blood_request.request_id}: "
+            f"{self.units} units"
+        )
