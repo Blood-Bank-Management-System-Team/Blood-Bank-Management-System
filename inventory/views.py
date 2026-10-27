@@ -1,4 +1,3 @@
-
 from django.db.models import Sum
 from django.utils import timezone
 from rest_framework import generics, status
@@ -7,6 +6,7 @@ from rest_framework.views import APIView
 
 from users.permissions import IsHospital, IsStaffOrAdmin
 
+from .compatibility import is_blood_compatible
 from .models import BloodStock, BloodUnit
 from .serializers import BloodAvailabilitySerializer, BloodUnitSerializer
 
@@ -116,3 +116,88 @@ class StockSummaryView(APIView):
         )
 
         return Response(list(stock))
+
+class CrossBankSearchView(APIView):
+    """
+    Search available, unexpired blood stock across all recorded locations.
+
+    Results include stock whose donor blood group is compatible with the
+    requested recipient blood group. The requested location is prioritised.
+    """
+
+    permission_classes = [IsHospital]
+
+    def get(self, request):
+        recipient_group = (
+            request.query_params.get("blood_group", "").strip().upper()
+        )
+        location = request.query_params.get("location", "").strip()
+
+        valid_groups = BloodStock.BloodGroup.values
+
+        if not recipient_group or not location:
+            return Response(
+                {"detail": "Both blood_group and location are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if recipient_group not in valid_groups:
+            return Response(
+                {"detail": "Invalid blood group."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        compatible_groups = [
+            donor_group
+            for donor_group in valid_groups
+            if is_blood_compatible(donor_group, recipient_group)
+        ]
+
+        today = timezone.localdate()
+
+        stock_rows = (
+            BloodStock.objects.filter(
+                blood_group__in=compatible_groups,
+                status=BloodStock.StockStatus.AVAILABLE,
+                expiry_date__gte=today,
+                available_units__gt=0,
+            )
+            .order_by("expiry_date", "location", "blood_group", "pk")
+        )
+
+        results = []
+        for stock in stock_rows:
+            results.append(
+                {
+                    "id": stock.pk,
+                    "blood_group": stock.blood_group,
+                    "location": stock.location,
+                    "available_units": stock.available_units,
+                    "expiry_date": stock.expiry_date.isoformat(),
+                    "is_requested_location": (
+                        stock.location.casefold() == location.casefold()
+                    ),
+                }
+            )
+
+        results.sort(
+            key=lambda item: (
+                not item["is_requested_location"],
+                item["expiry_date"],
+                item["location"].casefold(),
+                item["blood_group"],
+                item["id"],
+            )
+        )
+
+        return Response(
+            {
+                "recipient_blood_group": recipient_group,
+                "requested_location": location,
+                "results": results,
+                "total_units": sum(
+                    item["available_units"] for item in results
+                ),
+            },
+            status=status.HTTP_200_OK,
+        )

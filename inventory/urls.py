@@ -1,4 +1,3 @@
-
 from django.urls import path
 
 from .views import (
@@ -6,6 +5,7 @@ from .views import (
     BloodUnitListCreateView,
     BloodUnitDetailView,
     StockSummaryView,
+    CrossBankSearchView,
 )
 
 urlpatterns = [
@@ -13,6 +13,11 @@ urlpatterns = [
         "availability/",
         BloodAvailabilityView.as_view(),
         name="blood-availability",
+    ),
+    path(
+        "cross-bank-search/",
+        CrossBankSearchView.as_view(),
+        name="cross-bank-search",
     ),
     path(
         "",
