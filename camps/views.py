@@ -1,18 +1,19 @@
+from datetime import timedelta
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
-from django.db.models import F
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views import View
 
-from donors.models import DonorProfile
+from donors.models import DonationRecord, DonorProfile
+from inventory.models import BloodUnit
 from users.models import User
 
-from .forms import DonationCampForm
-from .models import CampRegistration, DonationCamp
+from .forms import CampDonationForm, DonationCampForm
+from .models import CampDonation, CampRegistration, DonationCamp
 
 
 class CampListView(View):
@@ -78,7 +79,12 @@ class CampManageView(LoginRequiredMixin, View):
 
     def get(self, request):
         camps = DonationCamp.objects.all().order_by("-created_at")
-        return render(request, "camps/camp_manage.html", {"camps": camps})
+
+        return render(
+            request,
+            "camps/camp_manage.html",
+            {"camps": camps},
+        )
 
 
 class CampPublishView(LoginRequiredMixin, View):
@@ -102,11 +108,12 @@ class CampPublishView(LoginRequiredMixin, View):
             request,
             "Camp published." if camp.is_published else "Camp unpublished.",
         )
+
         return redirect("camp-manage")
 
 
 class CampRegisterView(LoginRequiredMixin, View):
-    """Register a donor for a camp while protecting the available slots."""
+    """Register a donor for a camp while protecting available slots."""
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated and request.user.role != User.Role.DONOR:
@@ -132,21 +139,119 @@ class CampRegisterView(LoginRequiredMixin, View):
                 date__gte=timezone.localdate(),
             )
 
-            if CampRegistration.objects.filter(camp=camp, donor=donor).exists():
-                messages.info(request, "You are already registered for this camp.")
+            if CampRegistration.objects.filter(
+                camp=camp,
+                donor=donor,
+            ).exists():
+                messages.info(
+                    request,
+                    "You are already registered for this camp.",
+                )
                 return redirect("camp-list")
 
-            registered_count = CampRegistration.objects.filter(camp=camp).count()
+            registered_count = CampRegistration.objects.filter(
+                camp=camp,
+            ).count()
 
             if registered_count >= camp.available_slots:
                 messages.error(request, "Sorry, this camp is full.")
                 return redirect("camp-list")
 
             try:
-                CampRegistration.objects.create(camp=camp, donor=donor)
+                CampRegistration.objects.create(
+                    camp=camp,
+                    donor=donor,
+                )
             except IntegrityError:
-                messages.info(request, "You are already registered for this camp.")
+                messages.info(
+                    request,
+                    "You are already registered for this camp.",
+                )
                 return redirect("camp-list")
 
         messages.success(request, f"You have registered for {camp.name}.")
         return redirect("camp-list")
+
+class CampDonationRecordView(LoginRequiredMixin, View):
+    """Record a camp donation and update inventory and donor history."""
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+
+        if request.user.role not in (User.Role.STAFF, User.Role.ADMIN):
+            raise PermissionDenied
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, pk):
+        camp = get_object_or_404(DonationCamp, pk=pk)
+        form = CampDonationForm(camp=camp)
+        return render(
+            request,
+            "camps/camp_donation_form.html",
+            {"form": form, "camp": camp},
+        )
+
+    def post(self, request, pk):
+        camp = get_object_or_404(DonationCamp, pk=pk)
+        form = CampDonationForm(request.POST, camp=camp)
+
+        if not form.is_valid():
+            return render(
+                request,
+                "camps/camp_donation_form.html",
+                {"form": form, "camp": camp},
+            )
+
+        registration = form.cleaned_data["registration"]
+        units = form.cleaned_data["units_collected"]
+
+        try:
+            with transaction.atomic():
+                registration = CampRegistration.objects.select_for_update().get(
+                    pk=registration.pk,
+                    camp=camp,
+                )
+
+                donation = CampDonation.objects.create(
+                    registration=registration,
+                    units_collected=units,
+                    recorded_by=request.user,
+                )
+
+                donor = registration.donor
+                collection_date = timezone.localdate()
+                expiry_date = collection_date + timedelta(days=35)
+
+                for _ in range(units):
+                    BloodUnit.objects.create(
+                        blood_group=donor.blood_group,
+                        quantity=1,
+                        collection_date=collection_date,
+                        expiry_date=expiry_date,
+                        bank_location=camp.venue,
+                        created_by=request.user,
+                    )
+
+                DonationRecord.objects.create(
+                    donor=donor,
+                    donation_date=collection_date,
+                    blood_bank_location=camp.venue,
+                    units=units,
+                    recorded_by=request.user,
+                    notes=f"Donation recorded at camp: {camp.name}",
+                )
+
+        except IntegrityError:
+            messages.error(
+                request,
+                "This donor's donation has already been recorded for this camp.",
+            )
+            return redirect("camp-manage")
+
+        messages.success(
+            request,
+            f"Recorded {units} unit(s) for {registration.donor}.",
+        )
+        return redirect("camp-manage")
