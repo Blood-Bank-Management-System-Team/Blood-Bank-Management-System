@@ -1,0 +1,47 @@
+# Production stack for the server. Deployed by .github/workflows/cd.yml (via scripts/deploy.sh).
+# Needs a .env next to this file (see .env.example) with DJANGO_SECRET_KEY, DJANGO_ALLOWED_HOSTS,
+# DJANGO_CSRF_TRUSTED_ORIGINS and the DB_* values.
+#
+# WEB_IMAGE and IMAGE_TAG are set by the deploy script, e.g.
+#   WEB_IMAGE=ghcr.io/<owner>/<repo>  IMAGE_TAG=<commit sha>
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    image: ${WEB_IMAGE:?WEB_IMAGE is required}:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Forced here so a stale .env can never switch production into debug mode.
+      DJANGO_DEBUG: "False"
+      DB_HOST: db
+    ports:
+      # Bound to localhost: put a TLS-terminating reverse proxy in front (it must send
+      # X-Forwarded-Proto). Set WEB_PORT_BIND=8000 to publish on all interfaces instead.
+      - "${WEB_PORT_BIND:-127.0.0.1:8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "scripts/healthcheck.py"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+volumes:
+  pgdata:

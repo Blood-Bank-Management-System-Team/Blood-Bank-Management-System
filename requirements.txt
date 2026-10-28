@@ -4,3 +4,4 @@ psycopg[binary]
 gunicorn
 djangorestframework-simplejwt
 reportlab
+whitenoise

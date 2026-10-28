@@ -1,0 +1,22 @@
+.git
+.github
+.gitignore
+.gitattributes
+.vscode
+venv
+.venv
+__pycache__
+*.pyc
+.env
+.env.*
+db.sqlite3
+*.sqlite3
+staticfiles
+demo
+
+# Large documents and media that are not needed in the image
+*.pdf
+*.mp4
+*.docx
+*.pptx
+*.zip
