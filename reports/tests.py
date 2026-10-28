@@ -1,3 +1,4 @@
+
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -16,8 +17,12 @@ from .models import AuditLog
 User = get_user_model()
 PASSWORD = "Str0ng-Pass#2024"
 PROFILE = {
-    "blood_group": "O+", "date_of_birth": "1995-01-01", "weight_kg": "60.0", "gender": "MALE",
-    "address": "x", "city": "Pune",
+    "blood_group": "O+",
+    "date_of_birth": "1995-01-01",
+    "weight_kg": "60.0",
+    "gender": "MALE",
+    "address": "x",
+    "city": "Pune",
 }
 
 
@@ -28,13 +33,23 @@ class AuditSignalTests(TestCase):
     def test_donor_profile_create_and_update_logged_with_user(self):
         donor = User.objects.create_user("donor1", password=PASSWORD, role="DONOR")
         self.api.force_authenticate(donor)
-        self.assertEqual(self.api.post("/api/donors/profile/", PROFILE, format="json").status_code, 201)
+        self.assertEqual(
+            self.api.post("/api/donors/profile/", PROFILE, format="json").status_code,
+            201,
+        )
         profile = DonorProfile.objects.get(user=donor)
         create = AuditLog.objects.get(action="CREATE", model_name="DonorProfile")
         self.assertEqual(create.user, donor)
         self.assertEqual(create.object_id, str(profile.pk))
 
-        self.assertEqual(self.api.put("/api/donors/profile/", {**PROFILE, "city": "Delhi"}, format="json").status_code, 200)
+        self.assertEqual(
+            self.api.put(
+                "/api/donors/profile/",
+                {**PROFILE, "city": "Delhi"},
+                format="json",
+            ).status_code,
+            200,
+        )
         update = AuditLog.objects.get(action="UPDATE", model_name="DonorProfile")
         self.assertEqual(update.user, donor)
         self.assertIn("city", update.description)
@@ -43,8 +58,13 @@ class AuditSignalTests(TestCase):
     def test_unchanged_save_not_logged(self):
         donor = User.objects.create_user("d", password=PASSWORD, role="DONOR")
         profile = DonorProfile.objects.create(
-            user=donor, blood_group="O+", date_of_birth=date(1995, 1, 1), weight_kg=Decimal("60"),
-            gender="MALE", address="x", city="Pune",
+            user=donor,
+            blood_group="O+",
+            date_of_birth=date(1995, 1, 1),
+            weight_kg=Decimal("60"),
+            gender="MALE",
+            address="x",
+            city="Pune",
         )
         AuditLog.objects.all().delete()
         profile.save()
@@ -66,19 +86,49 @@ class AuditSignalTests(TestCase):
         hospital = User.objects.create_user("h", password=PASSWORD, role="HOSPITAL")
         admin_user = User.objects.create_user("a", password=PASSWORD, role="ADMIN")
         req = BloodRequest.objects.create(
-            requester=hospital, blood_group="O+", units=2, location="X", priority="scheduled"
+            requester=hospital,
+            blood_group="O+",
+            units=2,
+            location="X",
+            priority="scheduled",
         )
-        self.assertTrue(AuditLog.objects.filter(action="CREATE", model_name="BloodRequest").exists())
-        for status, action in (("approved", "APPROVE"), ("fulfilled", "FULFIL"), ("rejected", "REJECT")):
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action="CREATE", model_name="BloodRequest"
+            ).exists()
+        )
+        for status, action in (
+            ("approved", "APPROVE"),
+            ("fulfilled", "FULFIL"),
+            ("rejected", "REJECT"),
+        ):
             req.status = status
             req.save()
-            self.assertTrue(AuditLog.objects.filter(action=action, object_id=str(req.pk)).exists(), action)
-        self.assertEqual(AuditLog.objects.filter(action="UPDATE", model_name="BloodRequest").count(), 0)
-        # acting user captured through middleware on a real request
-        req2 = BloodRequest.objects.create(
-            requester=hospital, blood_group="A+", units=1, location="X", priority="scheduled"
+            self.assertTrue(
+                AuditLog.objects.filter(
+                    action=action, object_id=str(req.pk)
+                ).exists(),
+                action,
+            )
+        self.assertEqual(
+            AuditLog.objects.filter(
+                action="UPDATE", model_name="BloodRequest"
+            ).count(),
+            0,
         )
-        self.assertIsNone(AuditLog.objects.filter(action="CREATE", object_id=str(req2.pk)).first().user)
+        # Acting user captured through middleware on a real request
+        req2 = BloodRequest.objects.create(
+            requester=hospital,
+            blood_group="A+",
+            units=1,
+            location="X",
+            priority="scheduled",
+        )
+        self.assertIsNone(
+            AuditLog.objects.filter(
+                action="CREATE", object_id=str(req2.pk)
+            ).first().user
+        )
         self.assertIsNotNone(admin_user)
 
     def test_login_logged(self):
@@ -101,7 +151,10 @@ class AuditSignalTests(TestCase):
     def test_logging_failure_does_not_break_action(self):
         from unittest import mock
 
-        with mock.patch("reports.audit.AuditLog.objects.create", side_effect=RuntimeError("db down")):
+        with mock.patch(
+            "reports.audit.AuditLog.objects.create",
+            side_effect=RuntimeError("db down"),
+        ):
             with self.assertLogs("reports.audit", level="WARNING"):
                 user = User.objects.create_user("x", password=PASSWORD, role="DONOR")
                 user.role = "STAFF"
@@ -119,8 +172,18 @@ class AuditApiTests(TestCase):
         self.staff = User.objects.create_user("st", password=PASSWORD, role="STAFF")
         self.donor = User.objects.create_user("dn", password=PASSWORD, role="DONOR")
         AuditLog.objects.all().delete()
-        self.a = AuditLog.objects.create(user=self.admin, action="CREATE", model_name="DonorProfile", object_id="1")
-        self.b = AuditLog.objects.create(user=self.staff, action="DELETE", model_name="BloodUnit", object_id="2")
+        self.a = AuditLog.objects.create(
+            user=self.admin,
+            action="CREATE",
+            model_name="DonorProfile",
+            object_id="1",
+        )
+        self.b = AuditLog.objects.create(
+            user=self.staff,
+            action="DELETE",
+            model_name="BloodUnit",
+            object_id="2",
+        )
         old = timezone.now() - timedelta(days=10)
         AuditLog.objects.filter(pk=self.b.pk).update(timestamp=old)
 
@@ -138,13 +201,16 @@ class AuditApiTests(TestCase):
 
     def test_filters(self):
         self.api.force_authenticate(self.admin)
-        ids = lambda q: [r["id"] for r in self.api.get(self.URL + q).json()["results"]]  # noqa: E731
+        ids = lambda q: [r["id"] for r in self.api.get(self.URL + q).json()["results"]]
         self.assertEqual(ids("?action=DELETE"), [self.b.id])
         self.assertEqual(ids("?user=boss"), [self.a.id])
         self.assertEqual(ids("?model=BloodUnit"), [self.b.id])
         today = timezone.localdate().isoformat()
         self.assertEqual(ids(f"?date_from={today}"), [self.a.id])
-        self.assertEqual(ids(f"?date_to={(timezone.localdate() - timedelta(days=5)).isoformat()}"), [self.b.id])
+        self.assertEqual(
+            ids(f"?date_to={(timezone.localdate() - timedelta(days=5)).isoformat()}"),
+            [self.b.id],
+        )
         self.assertEqual(self.api.get(self.URL + "?date_from=bad").status_code, 400)
         self.assertEqual(self.api.get(self.URL + "?action=NOPE").status_code, 400)
 
@@ -194,55 +260,83 @@ class ReportsTests(TestCase):
         cls.today = timezone.localdate()
         cls.admin = User.objects.create_user("rep_admin", password=PASSWORD, role="ADMIN")
         cls.staff = User.objects.create_user("rep_staff", password=PASSWORD, role="STAFF")
-        cls.hospital = User.objects.create_user("rep_hosp", password=PASSWORD, role="HOSPITAL")
-        cls.donor_user = User.objects.create_user("rep_donor", password=PASSWORD, role="DONOR")
+        cls.hospital = User.objects.create_user(
+            "rep_hosp", password=PASSWORD, role="HOSPITAL"
+        )
+        cls.donor_user = User.objects.create_user(
+            "rep_donor", password=PASSWORD, role="DONOR"
+        )
         donor = DonorProfile.objects.create(
-            user=cls.donor_user, blood_group="O+", date_of_birth=date(1995, 1, 1),
-            weight_kg=Decimal("60"), gender="MALE", address="x", city="Pune",
+            user=cls.donor_user,
+            blood_group="O+",
+            date_of_birth=date(1995, 1, 1),
+            weight_kg=Decimal("60"),
+            gender="MALE",
+            address="x",
+            city="Pune",
         )
 
         def days_ago(n):
             return cls.today - timedelta(days=n)
 
-        # donations: 3 in the default range (units 1+2+1), 1 old
+        # Donations: 3 in the default range (units 1+2+1), 1 old
         for n, units in ((2, 1), (2, 2), (10, 1), (60, 2)):
             DonationRecord.objects.create(
-                donor=donor, donation_date=days_ago(n), blood_bank_location="Main", units=units)
+                donor=donor,
+                donation_date=days_ago(n),
+                blood_bank_location="Main",
+                units=units,
+            )
 
         def stock(group, units, status="AVAILABLE", expiry=None):
             return BloodStock.objects.create(
-                blood_group=group, location="Main", available_units=units,
-                collection_date=days_ago(30), expiry_date=expiry or days_ago(-20), status=status,
+                blood_group=group,
+                location="Main",
+                available_units=units,
+                collection_date=days_ago(30),
+                expiry_date=expiry or days_ago(-20),
+                status=status,
             )
 
         stock("O+", 10)
-        stock("O+", 5)                       # O+ total 15
-        stock("A+", 3)                       # below the A+ threshold of 5
-        stock("B+", 7, status="RESERVED")    # excluded
-        stock("B+", 4, expiry=days_ago(5))   # excluded (expired)
-        stock("AB+", 6, status="DISPOSED")   # excluded from stock, counted as wastage
+        stock("O+", 5)  # O+ total 15
+        stock("A+", 3)  # Below the A+ threshold of 5
+        stock("B+", 7, status="RESERVED")  # Excluded
+        stock("B+", 4, expiry=days_ago(5))  # Excluded (expired)
+        stock("AB+", 6, status="DISPOSED")  # Excluded from stock, counted as wastage
         LowStockThreshold.objects.create(blood_group="A+", minimum_quantity=5)
         LowStockThreshold.objects.create(blood_group="O+", minimum_quantity=5)
 
-        # wastage: AB+ 6 units disposed 3 days ago after expiring ("expired");
+        # Wastage: AB+ 6 units disposed 3 days ago after expiring ("expired");
         # O- 2 units disposed 40 days ago while still in date ("other")
         old = stock("O-", 2, status="DISPOSED")
         BloodStock.objects.filter(blood_group="AB+", status="DISPOSED").update(
-            updated_at=timezone.now() - timedelta(days=3), expiry_date=days_ago(20))
-        BloodStock.objects.filter(pk=old.pk).update(updated_at=timezone.now() - timedelta(days=40))
+            updated_at=timezone.now() - timedelta(days=3),
+            expiry_date=days_ago(20),
+        )
+        BloodStock.objects.filter(pk=old.pk).update(
+            updated_at=timezone.now() - timedelta(days=40)
+        )
 
         def req(group, priority, status, age=1):
             r = BloodRequest.objects.create(
-                requester=cls.hospital, blood_group=group, units=2, location="H",
-                priority=priority, status=status)
-            BloodRequest.objects.filter(pk=r.pk).update(created_at=timezone.now() - timedelta(days=age))
+                requester=cls.hospital,
+                blood_group=group,
+                units=2,
+                location="H",
+                priority=priority,
+                status=status,
+            )
+            BloodRequest.objects.filter(pk=r.pk).update(
+                created_at=timezone.now() - timedelta(days=age)
+            )
 
         req("O+", "emergency", "pending")
         req("A+", "scheduled", "pending")
         req("B+", "emergency", "approved")
         req("O+", "scheduled", "rejected")
         req("O+", "scheduled", "fulfilled")
-        req("O+", "emergency", "fulfilled", age=90)  # outside the default range
+        req("O+", "emergency", "fulfilled", age=90)  # Outside the default range
 
     def api(self, user=None, **params):
         client = APIClient()
@@ -250,7 +344,7 @@ class ReportsTests(TestCase):
             client.force_authenticate(user)
         return client.get(self.URL, params)
 
-    # --- numbers ---
+    # --- Numbers ---
     def test_summary_totals(self):
         data = self.api(self.admin).json()
         self.assertEqual(data["donations"]["total_units"], 4)
@@ -263,8 +357,8 @@ class ReportsTests(TestCase):
         stock = {g["blood_group"]: g["units"] for g in data["stock"]["groups"]}
         self.assertEqual(stock["O+"], 15)
         self.assertEqual(stock["A+"], 3)
-        self.assertEqual(stock["B+"], 0)   # reserved and expired excluded
-        self.assertEqual(stock["AB+"], 0)  # disposed excluded
+        self.assertEqual(stock["B+"], 0)  # Reserved and expired excluded
+        self.assertEqual(stock["AB+"], 0)  # Disposed excluded
         self.assertEqual(data["stock"]["total_units"], 18)
 
         req = data["requests"]
@@ -284,7 +378,7 @@ class ReportsTests(TestCase):
         wastage = data["wastage"]
         self.assertEqual(wastage["total_units"], 6)
         self.assertEqual(wastage["by_blood_group"]["AB+"], 6)
-        self.assertEqual(wastage["by_blood_group"]["O-"], 0)  # outside the range
+        self.assertEqual(wastage["by_blood_group"]["O-"], 0)  # Outside the range
         self.assertEqual(wastage["by_reason"], {"expired": 6, "other": 0})
 
     def test_low_stock_group_flagged(self):
@@ -293,20 +387,26 @@ class ReportsTests(TestCase):
         flags = {g["blood_group"]: g["low_stock"] for g in stock["groups"]}
         self.assertTrue(flags["A+"])
         self.assertFalse(flags["O+"])
-        self.assertFalse(flags["B+"])  # no threshold configured
+        self.assertFalse(flags["B+"])  # No threshold configured
 
     def test_date_filter_changes_numbers(self):
-        wide = self.api(self.admin, date_from=(self.today - timedelta(days=100)).isoformat(),
-                        date_to=self.today.isoformat()).json()
+        wide = self.api(
+            self.admin,
+            date_from=(self.today - timedelta(days=100)).isoformat(),
+            date_to=self.today.isoformat(),
+        ).json()
         self.assertEqual(wide["donations"]["total_units"], 6)
         self.assertEqual(wide["wastage"]["by_blood_group"]["O-"], 2)
         self.assertEqual(wide["wastage"]["by_reason"], {"expired": 6, "other": 2})
         self.assertEqual(wide["requests"]["total"], 6)
-        narrow = self.api(self.admin, date_from=(self.today - timedelta(days=5)).isoformat(),
-                          date_to=self.today.isoformat()).json()
+        narrow = self.api(
+            self.admin,
+            date_from=(self.today - timedelta(days=5)).isoformat(),
+            date_to=self.today.isoformat(),
+        ).json()
         self.assertEqual(narrow["donations"]["total_units"], 3)
 
-    # --- validation and permissions ---
+    # --- Validation and permissions ---
     def test_invalid_dates_return_400(self):
         r = self.api(self.admin, date_from="2024-13-45")
         self.assertEqual(r.status_code, 400)
@@ -322,7 +422,7 @@ class ReportsTests(TestCase):
         self.assertEqual(self.api(self.admin).status_code, 200)
         self.assertEqual(self.api(self.staff).status_code, 200)
 
-    # --- page and CSV ---
+    # --- Page and CSV ---
     def test_page_renders_for_admin(self):
         c = Client()
         c.force_login(self.admin)
@@ -353,26 +453,36 @@ class ReportsTests(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r["Content-Type"].startswith("text/csv"))
         body = r.content.decode()
-        for header in ("Donations collected", "Donations per day", "Available stock by blood group",
-                       "Blood requests by status", "Blood requests by priority",
-                       "Wastage by blood group", "Wastage by reason"):
+        for header in (
+            "Donations collected",
+            "Donations per day",
+            "Available stock by blood group",
+            "Blood requests by status",
+            "Blood requests by priority",
+            "Wastage by blood group",
+            "Wastage by reason",
+        ):
             self.assertIn(header, body)
         c.force_login(self.donor_user)
         self.assertEqual(c.get("/reports/export.csv").status_code, 403)
         c.force_login(self.admin)
         self.assertEqual(c.get("/reports/export.csv", {"date_from": "bad"}).status_code, 400)
 
-    # --- performance ---
+    # --- Performance ---
     def test_summary_query_count_is_small_and_fixed(self):
         client = APIClient()
         client.force_authenticate(self.admin)
         with CaptureQueriesContext(connection) as first:
             client.get(self.URL)
         self.assertLessEqual(len(first), 10, [q["sql"] for q in first])
-        for group in ("A-", "B-", "AB-"):  # more data must not add queries
+        for group in ("A-", "B-", "AB-"):  # More data must not add queries
             BloodStock.objects.create(
-                blood_group=group, location="Main", available_units=1,
-                collection_date=self.today, expiry_date=self.today + timedelta(days=9))
+                blood_group=group,
+                location="Main",
+                available_units=1,
+                collection_date=self.today,
+                expiry_date=self.today + timedelta(days=9),
+            )
         with CaptureQueriesContext(connection) as second:
             client.get(self.URL)
         self.assertEqual(len(first), len(second))
