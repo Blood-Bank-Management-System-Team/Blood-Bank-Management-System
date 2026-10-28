@@ -1,3 +1,4 @@
+
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
@@ -67,6 +68,7 @@ class BloodAvailabilityTests(TestCase):
             "/api/blood/availability/",
             {"blood_group": "O+", "location": "Bengaluru"},
         )
+
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["available_units"], 8)
 
@@ -261,6 +263,173 @@ class BloodUnitAPITests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 0)
 
+    # BB-21: Inventory filtering tests
+
+    def test_filter_by_blood_group(self):
+        BloodUnit.objects.create(
+            blood_group="A+",
+            quantity=4,
+            collection_date="2026-10-02",
+            expiry_date="2026-11-26",
+            bank_location="Another Blood Bank",
+            created_by=self.staff,
+            updated_by=self.staff,
+        )
+
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(
+            self.list_url,
+            {"blood_group": "A+"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["blood_group"], "A+")
+
+    def test_filter_by_location(self):
+        BloodUnit.objects.create(
+            blood_group="A+",
+            quantity=4,
+            collection_date="2026-10-02",
+            expiry_date="2026-11-26",
+            bank_location="Another Blood Bank",
+            created_by=self.staff,
+            updated_by=self.staff,
+        )
+
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(
+            self.list_url,
+            {"location": "Another Blood Bank"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(
+            response.data[0]["bank_location"],
+            "Another Blood Bank",
+        )
+
+    def test_filter_by_expiry_date(self):
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(
+            self.list_url,
+            {"expiry_date": "2026-11-25"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(
+            response.data[0]["expiry_date"],
+            "2026-11-25",
+        )
+
+    def test_filter_by_collection_date(self):
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(
+            self.list_url,
+            {"collection_date": "2026-10-01"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(
+            response.data[0]["collection_date"],
+            "2026-10-01",
+        )
+
+    # BB-21: Inventory sorting tests
+
+    def test_sort_by_expiry_date_ascending(self):
+        BloodUnit.objects.create(
+            blood_group="A+",
+            quantity=4,
+            collection_date="2026-10-02",
+            expiry_date="2026-11-10",
+            bank_location="Another Blood Bank",
+            created_by=self.staff,
+            updated_by=self.staff,
+        )
+
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(
+            self.list_url,
+            {"sort_by": "expiry_date", "sort_order": "asc"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [item["expiry_date"] for item in response.data],
+            ["2026-11-10", "2026-11-25"],
+        )
+
+    def test_sort_by_collection_date_descending(self):
+        BloodUnit.objects.create(
+            blood_group="A+",
+            quantity=4,
+            collection_date="2026-10-02",
+            expiry_date="2026-11-26",
+            bank_location="Another Blood Bank",
+            created_by=self.staff,
+            updated_by=self.staff,
+        )
+
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(
+            self.list_url,
+            {"sort_by": "collection_date", "sort_order": "desc"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [item["collection_date"] for item in response.data],
+            ["2026-10-02", "2026-10-01"],
+        )
+
+
+    def test_sort_by_blood_group_ascending(self):
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(
+            self.list_url,
+            {"sort_by": "blood_group", "sort_order": "asc"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        groups = [item["blood_group"] for item in response.data]
+        self.assertEqual(groups, sorted(groups))
+
+    def test_sort_by_blood_group_descending(self):
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(
+            self.list_url,
+            {"sort_by": "blood_group", "sort_order": "desc"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        groups = [item["blood_group"] for item in response.data]
+        self.assertEqual(groups, sorted(groups, reverse=True))
+
+    def test_sort_by_location_ascending(self):
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(
+            self.list_url,
+            {"sort_by": "location", "sort_order": "asc"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        locations = [item["bank_location"] for item in response.data]
+        self.assertEqual(locations, sorted(locations))
+
+    def test_sort_by_location_descending(self):
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(
+            self.list_url,
+            {"sort_by": "location", "sort_order": "desc"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        locations = [item["bank_location"] for item in response.data]
+        self.assertEqual(locations, sorted(locations, reverse=True))
 
 class BloodCompatibilityTests(TestCase):
     def test_o_negative_is_compatible_with_all_groups(self):
