@@ -1,0 +1,54 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Upcoming Blood Donation Camps</h2>
+    <p>Find a donation camp near you and register to participate.</p>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if camps %}
+        <div class="row">
+            {% for camp in camps %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ camp.name }}</h5>
+                            <p>{{ camp.description|default:"No description provided." }}</p>
+                            <p><strong>Date:</strong> {{ camp.date }}</p>
+                            <p><strong>Venue:</strong> {{ camp.venue }}</p>
+                            <p><strong>Available slots:</strong> {{ camp.remaining_slots }}</p>
+
+                            {% if user.is_authenticated and user.role == "DONOR" %}
+                                {% if camp.is_full %}
+                                    <button class="btn btn-secondary" disabled>Camp Full</button>
+                                {% else %}
+                                    <form method="post" action="{% url 'camp-register' camp.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-primary">
+                                            Register for Camp
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            {% elif not user.is_authenticated %}
+                                <a href="{% url 'login' %}" class="btn btn-outline-primary">
+                                    Log in to Register
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No upcoming donation camps are available right now.</p>
+    {% endif %}
+</div>
+{% endblock %}
