@@ -2,17 +2,31 @@
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import PermissionDenied
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Sum
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.generic import CreateView, TemplateView, UpdateView
 
 from inventory.models import BloodUnit
 from notifications.models import AdminNotification, LowStockThreshold
 
-from .forms import ProfileForm, RegisterForm
+from .forms import (
+    PasswordResetOTPForm,
+    PasswordResetRequestForm,
+    ProfileForm,
+    RegisterForm,
+    SetNewPasswordForm,
+)
 from .models import User
+from .password_reset import (
+    consume_password_reset_grant,
+    get_password_reset_grant_user,
+    request_password_reset,
+    verify_password_reset_otp,
+)
+
 
 
 ROLE_DASHBOARDS = {
@@ -160,3 +174,116 @@ class ProfilePageView(LoginRequiredMixin, UpdateView):
         form.save()
         messages.success(self.request, "Profile updated.")
         return redirect("profile")
+
+def password_reset_request_view(request):
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+
+    if request.method == "POST":
+        form = PasswordResetRequestForm(request.POST)
+
+        if form.is_valid():
+            email = form.cleaned_data["email"]
+
+            try:
+                request_password_reset(email)
+            except Exception:
+                form.add_error(
+                    None,
+                    "Unable to send the reset email right now. Please try again.",
+                )
+            else:
+                request.session["password_reset_email"] = email.strip()
+                messages.success(
+                    request,
+                    "If the email is registered, a password-reset OTP has been sent.",
+                )
+                return redirect("password-reset-verify")
+    else:
+        form = PasswordResetRequestForm()
+
+    return render(
+        request,
+        "users/password_reset_request.html",
+        {"form": form},
+    )
+
+
+def password_reset_verify_view(request):
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+
+    email = request.session.get("password_reset_email")
+
+    if not email:
+        return redirect("password-reset-request")
+
+    if request.method == "POST":
+        form = PasswordResetOTPForm(
+            request.POST,
+            initial={"email": email},
+        )
+
+        if form.is_valid():
+            grant = verify_password_reset_otp(
+                email,
+                form.cleaned_data["otp"],
+            )
+
+            if grant:
+                request.session["password_reset_grant"] = grant
+                return redirect("password-reset-new-password")
+
+            form.add_error("otp", "Invalid or expired OTP. Please try again.")
+    else:
+        form = PasswordResetOTPForm(initial={"email": email})
+
+    return render(
+        request,
+        "users/password_reset_verify.html",
+        {"form": form},
+    )
+
+
+def password_reset_new_password_view(request):
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+
+    grant = request.session.get("password_reset_grant")
+
+    if not grant or not get_password_reset_grant_user(grant):
+        request.session.pop("password_reset_grant", None)
+        return redirect("password-reset-request")
+
+    if request.method == "POST":
+        form = SetNewPasswordForm(request.POST)
+
+        if form.is_valid():
+            user = consume_password_reset_grant(grant)
+
+            if user is None:
+                request.session.pop("password_reset_grant", None)
+                form.add_error(
+                    None,
+                    "Your reset session has expired. Please request a new OTP.",
+                )
+            else:
+                user.set_password(form.cleaned_data["new_password1"])
+                user.save(update_fields=["password"])
+
+                request.session.pop("password_reset_grant", None)
+                request.session.pop("password_reset_email", None)
+
+                messages.success(
+                    request,
+                    "Your password has been reset. You can now log in.",
+                )
+                return redirect("login")
+    else:
+        form = SetNewPasswordForm()
+
+    return render(
+        request,
+        "users/password_reset_new_password.html",
+        {"form": form},
+    )
