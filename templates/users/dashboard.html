@@ -1,93 +1,145 @@
+
 {% extends "base.html" %}
 
 {% block title %}My Dashboard - BBMS{% endblock %}
 
 {% block content %}
 <section class="page-heading">
-  <span class="badge">{{ user.get_role_display }}</span>
-  <h1>Welcome, {{ user.get_full_name|default:user.username }}</h1>
-  <p class="muted">
-    Your Blood Bank Management System dashboard.
-    Choose an option below to continue.
-  </p>
+    <span class="badge">{{ user.get_role_display }}</span>
+    <h1>Welcome, {{ user.get_full_name|default:user.username }}</h1>
+    <p class="muted">
+        Your Blood Bank Management System dashboard.
+        Choose an option below to continue.
+    </p>
 </section>
 
 <div class="card-grid">
 
-  {% if user.role == "DONOR" %}
-    <section class="card">
-      <div class="icon-tile"><svg class="icon"><use href="#i-drop"/></svg></div>
-      <h2>Donor Dashboard</h2>
-      <p>Manage your donor information and access your donor area.</p>
-      <a class="btn" href="{% url 'dashboard-donor' %}">Open Donor Dashboard</a>
-    </section>
+    {% if user.role == "DONOR" %}
+        <section class="card">
+            <div class="icon-tile"><svg class="icon"><use href="#i-drop"/></svg></div>
+            <h2>Donor Dashboard</h2>
+            <p>Manage your donor information and access your donor area.</p>
+            <a class="btn" href="{% url 'dashboard-donor' %}">Open Donor Dashboard</a>
+        </section>
+
+        <section class="card">
+            <div class="icon-tile"><svg class="icon"><use href="#i-user"/></svg></div>
+            <h2>My Profile</h2>
+            <p>Access your donor profile.</p>
+            <a class="btn btn-secondary" href="{% url 'donor-profile' %}">View Profile</a>
+        </section>
+
+    {% elif user.role == "STAFF" %}
+        <section class="card">
+            <div class="icon-tile"><svg class="icon"><use href="#i-medical"/></svg></div>
+            <h2>Blood Bank Operations</h2>
+            <p>Access the staff dashboard for blood bank activities.</p>
+            <a class="btn" href="{% url 'dashboard-staff' %}">Open Staff Dashboard</a>
+        </section>
+
+        <section class="card">
+            <div class="icon-tile"><svg class="icon"><use href="#i-box"/></svg></div>
+            <h2>Inventory and Requests</h2>
+            <p>Continue to the staff area to access available operations.</p>
+            <a class="btn btn-secondary" href="{% url 'dashboard-staff' %}">Staff Workspace</a>
+        </section>
+
+    {% elif user.role == "HOSPITAL" %}
+        <section class="card">
+            <div class="icon-tile"><svg class="icon"><use href="#i-medical"/></svg></div>
+            <h2>Hospital Dashboard</h2>
+            <p>Access your hospital dashboard for blood request activities.</p>
+            <a class="btn" href="{% url 'dashboard-hospital' %}">Open Hospital Dashboard</a>
+        </section>
+
+        <section class="card">
+            <div class="icon-tile"><svg class="icon"><use href="#i-clipboard"/></svg></div>
+            <h2>Request Workspace</h2>
+            <p>Continue to your hospital area to access available options.</p>
+            <a class="btn btn-secondary" href="{% url 'dashboard-hospital' %}">Hospital Workspace</a>
+        </section>
+
+    {% elif user.role == "ADMIN" %}
+        <section class="card">
+            <div class="icon-tile"><svg class="icon"><use href="#i-sliders"/></svg></div>
+            <h2>Administration</h2>
+            <p>Access the administrator dashboard.</p>
+            <a class="btn" href="{% url 'dashboard-admin' %}">Open Admin Dashboard</a>
+        </section>
+
+        <section class="card">
+            <div class="icon-tile"><svg class="icon"><use href="#i-users"/></svg></div>
+            <h2>User Management</h2>
+            <p>Open the administrator workspace to access available management features.</p>
+            <a class="btn btn-secondary" href="{% url 'dashboard-admin' %}">Admin Workspace</a>
+        </section>
+    {% else %}
+        <section class="card">
+            <div class="icon-tile"><svg class="icon"><use href="#i-info"/></svg></div>
+            <h2>Dashboard Unavailable</h2>
+            <p>Your account role is not recognized. Please contact the system administrator.</p>
+        </section>
+    {% endif %}
 
     <section class="card">
-      <div class="icon-tile"><svg class="icon"><use href="#i-user"/></svg></div>
-      <h2>My Profile</h2>
-      <p>Access your donor profile.</p>
-      <a class="btn btn-secondary" href="{% url 'donor-profile' %}">View Profile</a>
+        <div class="icon-tile"><svg class="icon"><use href="#i-lock"/></svg></div>
+        <h2>Account</h2>
+        <p>Signed in as <strong>{{ user.username }}</strong>.</p>
+        <p class="muted">Use the navigation menu to return to your dashboard or log out securely.</p>
     </section>
-
-  {% elif user.role == "STAFF" %}
-    <section class="card">
-      <div class="icon-tile"><svg class="icon"><use href="#i-medical"/></svg></div>
-      <h2>Blood Bank Operations</h2>
-      <p>Access the staff dashboard for blood bank activities.</p>
-      <a class="btn" href="{% url 'dashboard-staff' %}">Open Staff Dashboard</a>
-    </section>
-
-    <section class="card">
-      <div class="icon-tile"><svg class="icon"><use href="#i-box"/></svg></div>
-      <h2>Inventory and Requests</h2>
-      <p>Continue to the staff area to access available operations.</p>
-      <a class="btn btn-secondary" href="{% url 'dashboard-staff' %}">Staff Workspace</a>
-    </section>
-
-  {% elif user.role == "HOSPITAL" %}
-    <section class="card">
-      <div class="icon-tile"><svg class="icon"><use href="#i-medical"/></svg></div>
-      <h2>Hospital Dashboard</h2>
-      <p>Access your hospital dashboard for blood request activities.</p>
-      <a class="btn" href="{% url 'dashboard-hospital' %}">Open Hospital Dashboard</a>
-    </section>
-
-    <section class="card">
-      <div class="icon-tile"><svg class="icon"><use href="#i-clipboard"/></svg></div>
-      <h2>Request Workspace</h2>
-      <p>Continue to your hospital area to access available options.</p>
-      <a class="btn btn-secondary" href="{% url 'dashboard-hospital' %}">Hospital Workspace</a>
-    </section>
-
-  {% elif user.role == "ADMIN" %}
-    <section class="card">
-      <div class="icon-tile"><svg class="icon"><use href="#i-sliders"/></svg></div>
-      <h2>Administration</h2>
-      <p>Access the administrator dashboard.</p>
-      <a class="btn" href="{% url 'dashboard-admin' %}">Open Admin Dashboard</a>
-    </section>
-
-    <section class="card">
-      <div class="icon-tile"><svg class="icon"><use href="#i-users"/></svg></div>
-      <h2>User Management</h2>
-      <p>Open the administrator workspace to access available management features.</p>
-      <a class="btn btn-secondary" href="{% url 'dashboard-admin' %}">Admin Workspace</a>
-    </section>
-
-  {% else %}
-    <section class="card">
-      <div class="icon-tile"><svg class="icon"><use href="#i-info"/></svg></div>
-      <h2>Dashboard Unavailable</h2>
-      <p>Your account role is not recognized. Please contact the system administrator.</p>
-    </section>
-  {% endif %}
-
-  <section class="card">
-    <div class="icon-tile"><svg class="icon"><use href="#i-lock"/></svg></div>
-    <h2>Account</h2>
-    <p>Signed in as <strong>{{ user.username }}</strong>.</p>
-    <p class="muted">Use the navigation menu to return to your dashboard or log out securely.</p>
-  </section>
 
 </div>
+
+{% if user.role == "ADMIN" %}
+<section class="card">
+    <h2>Low-Stock Alerts</h2>
+
+    {% if low_stock_alerts %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Blood Group</th>
+                    <th>Available Units</th>
+                    <th>Minimum Required</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for alert in low_stock_alerts %}
+                    <tr>
+                        <td>{{ alert.blood_group }}</td>
+                        <td>{{ alert.available_quantity }}</td>
+                        <td>{{ alert.minimum_quantity }}</td>
+                        <td>Low stock</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No low-stock alerts. All configured blood groups meet their minimum thresholds.</p>
+    {% endif %}
+
+    <h2>Admin Notifications</h2>
+
+    {% if admin_notifications %}
+        <ul>
+            {% for notification in admin_notifications %}
+                <li>
+                    <strong>{{ notification.blood_group }}:</strong>
+                    {{ notification.message }}
+                    <small>— {{ notification.created_at|date:"d M Y, H:i" }}</small>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No unread admin notifications.</p>
+    {% endif %}
+</section>
+{% endif %}
+
+<form method="post" action="{% url 'logout' %}" class="center">
+    {% csrf_token %}
+    <button type="submit">Logout</button>
+</form>
 {% endblock %}

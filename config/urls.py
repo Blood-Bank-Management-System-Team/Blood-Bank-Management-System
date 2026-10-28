@@ -30,4 +30,6 @@ urlpatterns = [
 
     # Admin
     path("admin/", admin.site.urls),
+    path("api/notifications/", include("notifications.urls")),
+   
 ]
