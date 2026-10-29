@@ -13,6 +13,13 @@
     <input type="hidden" name="next" value="{{ next }}">
     <button type="submit">Login</button>
   </form>
-  <p class="form-links">No account? <a href="{% url 'register' %}">Register</a> &middot; <a href="{% url 'home' %}">Home</a></p>
+<p class="form-links">
+  <a href="{% url 'password-reset-request' %}">Forgot Password?</a>
+  &middot;
+  No account? <a href="{% url 'register' %}">Register</a>
+  &middot;
+  <a href="{% url 'home' %}">Home</a>
+</p>
+
 </section>
 {% endblock %}
