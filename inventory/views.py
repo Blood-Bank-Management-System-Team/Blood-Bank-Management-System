@@ -74,14 +74,61 @@ class BloodUnitListCreateView(generics.ListCreateAPIView):
     serializer_class = BloodUnitSerializer
     permission_classes = [IsStaffOrAdmin]
 
+    # Supported filters and their corresponding model fields.
+    FILTER_FIELDS = {
+        "blood_group": "blood_group",
+        "location": "bank_location",
+        "expiry_date": "expiry_date",
+        "collection_date": "collection_date",
+    }
+
+    # Supported sorting fields.
+    SORT_FIELDS = {
+        "blood_group": "blood_group",
+        "location": "bank_location",
+        "expiry_date": "expiry_date",
+        "collection_date": "collection_date",
+    }
+
     def get_queryset(self):
         queryset = BloodUnit.objects.all()
+        params = self.request.query_params
 
-        if self.request.query_params.get("available", "").lower() == "true":
+        # Preserve the existing availability filter.
+        if params.get("available", "").lower() == "true":
             queryset = queryset.filter(
                 expiry_date__gte=timezone.localdate(),
                 quantity__gt=0,
             )
+
+        # Filter by blood group, location, expiry date,
+        # and collection date.
+        for param, field in self.FILTER_FIELDS.items():
+            value = params.get(param, "").strip()
+
+            if not value:
+                continue
+
+            if param in ("blood_group", "location"):
+                queryset = queryset.filter(
+                    **{f"{field}__iexact": value}
+                )
+            else:
+                queryset = queryset.filter(
+                    **{field: value}
+                )
+
+        # Sort by a supported field in ascending or descending order.
+        sort_by = params.get("sort_by", "").strip()
+        sort_order = params.get("sort_order", "asc").strip().lower()
+
+        if sort_by in self.SORT_FIELDS and sort_order in ("asc", "desc"):
+            field = self.SORT_FIELDS[sort_by]
+
+            if sort_order == "desc":
+                field = f"-{field}"
+
+            queryset = queryset.order_by(field)
 
         return queryset
 

@@ -1,0 +1,130 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .camp-manage-container h2 {
+        color: #ffffff;
+        font-weight: 700;
+        margin-bottom: 20px;
+    }
+
+    .camp-manage-container p {
+        color: #ffffff;
+    }
+
+    .camp-manage-container .table {
+        background-color: #ffffff;
+        color: #222222;
+        border-color: #dee2e6;
+        margin-top: 15px;
+    }
+
+    .camp-manage-container .table thead th {
+        background-color: #b51224;
+        color: #ffffff;
+        font-weight: 700;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .camp-manage-container .table tbody td {
+        color: #222222;
+        vertical-align: middle;
+    }
+
+    .camp-manage-container .table-striped > tbody > tr:nth-of-type(odd) > td {
+        background-color: #f2f2f2;
+    }
+
+    .camp-manage-container .table-striped > tbody > tr:nth-of-type(even) > td {
+        background-color: #ffffff;
+    }
+
+    .camp-manage-container .camp-status {
+        font-weight: 700;
+    }
+
+    .camp-manage-container .status-published {
+        color: #198754;
+    }
+
+    .camp-manage-container .status-draft {
+        color: #b45309;
+    }
+</style>
+
+<div class="container mt-4 mb-5 camp-manage-container">
+    <h2>Manage Donation Camps</h2>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <a href="{% url 'camp-create' %}" class="btn btn-primary mb-3">
+        Create New Camp
+    </a>
+
+    {% if camps %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>Camp Name</th>
+                        <th>Date</th>
+                        <th>Venue</th>
+                        <th>Slots</th>
+                        <th>Registrations</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for camp in camps %}
+                        <tr>
+                            <td>{{ camp.name }}</td>
+                            <td>{{ camp.date }}</td>
+                            <td>{{ camp.venue }}</td>
+                            <td>{{ camp.available_slots }}</td>
+                            <td>{{ camp.registered_count }}</td>
+                            <td>
+                                {% if camp.is_published %}
+                                    <span class="camp-status status-published">
+                                        Published
+                                    </span>
+                                {% else %}
+                                    <span class="camp-status status-draft">
+                                        Draft
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="post"
+                                      action="{% url 'camp-publish' camp.pk %}">
+                                    {% csrf_token %}
+
+                                    <button type="submit"
+                                            class="btn btn-sm btn-warning">
+                                        {% if camp.is_published %}
+                                            Unpublish
+                                        {% else %}
+                                            Publish
+                                        {% endif %}
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>No donation camps have been created yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

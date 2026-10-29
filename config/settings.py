@@ -37,6 +37,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -93,7 +94,18 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-LANGUAGE_CODE = "en-us"
+# BB-33: Multilingual UI configuration
+LANGUAGE_CODE = "en"
+
+LANGUAGES = [
+    ("en", "English"),
+    ("hi", "Hindi"),
+]
+
+LOCALE_PATHS = [
+    BASE_DIR / "locale",
+]
+
 TIME_ZONE = "Asia/Kolkata"
 USE_I18N = True
 USE_TZ = True
@@ -121,3 +133,15 @@ BBMS_MIN_DONATION_INTERVAL_DAYS = int(os.environ.get("BBMS_MIN_DONATION_INTERVAL
 BBMS_MIN_DONOR_AGE = int(os.environ.get("BBMS_MIN_DONOR_AGE", "18"))
 BBMS_MAX_DONOR_AGE = int(os.environ.get("BBMS_MAX_DONOR_AGE", "65"))
 BBMS_MIN_DONOR_WEIGHT_KG = int(os.environ.get("BBMS_MIN_DONOR_WEIGHT_KG", "50"))
+
+# BB-30 (notifications) / BB-27 (email OTP): Email configuration
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend",
+)
+DEFAULT_FROM_EMAIL = os.environ.get(
+    "DEFAULT_FROM_EMAIL",
+    "noreply@bbms.local",
+)
+
+PASSWORD_RESET_TIMEOUT = 600  # 10 minutes

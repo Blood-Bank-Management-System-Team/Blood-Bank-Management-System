@@ -1,10 +1,13 @@
-{% load static %}<!DOCTYPE html>
-<html lang="en">
+
+{% load static i18n %}
+{% get_current_language as CURRENT_LANGUAGE %}
+<!DOCTYPE html>
+<html lang="{{ CURRENT_LANGUAGE }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#3b0813">
-  <title>{% block title %}Blood Bank Management System{% endblock %}</title>
+  <title>{% block title %}{% trans "Blood Bank Management System" %}{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/bbms.css' %}">
 </head>
 
@@ -30,34 +33,46 @@
 
   <header class="site-header">
     <div class="nav-container">
-      <a class="brand" href="{% url 'home' %}"><svg class="icon"><use href="#i-drop"/></svg>BBMS</a>
+      <a class="brand" href="{% url 'home' %}">
+        <svg class="icon"><use href="#i-drop"/></svg>BBMS
+      </a>
 
-      <nav class="site-nav" aria-label="Main navigation">
-        <a href="{% url 'home' %}">Home</a>
+      <nav class="site-nav" aria-label="{% trans 'Main navigation' %}">
+        <a href="{% url 'home' %}">{% trans "Home" %}</a>
 
         {% if user.is_authenticated %}
-          <a href="{% url 'dashboard' %}">My Dashboard</a>
+          <a href="{% url 'dashboard' %}">{% trans "My Dashboard" %}</a>
 
           {% if user.role == "DONOR" %}
-            <a href="{% url 'dashboard-donor' %}">Donor</a>
+            <a href="{% url 'dashboard-donor' %}">{% trans "Donor" %}</a>
           {% elif user.role == "STAFF" %}
-            <a href="{% url 'dashboard-staff' %}">Staff</a>
+            <a href="{% url 'dashboard-staff' %}">{% trans "Staff" %}</a>
           {% elif user.role == "HOSPITAL" %}
-            <a href="{% url 'dashboard-hospital' %}">Hospital</a>
+            <a href="{% url 'dashboard-hospital' %}">{% trans "Hospital" %}</a>
           {% elif user.role == "ADMIN" %}
-            <a href="{% url 'dashboard-admin' %}">Admin Dashboard</a>
+            <a href="{% url 'dashboard-admin' %}">{% trans "Admin Dashboard" %}</a>
           {% endif %}
 
-          <a href="{% url 'profile' %}">Profile</a>
+          <a href="{% url 'profile' %}">{% trans "Profile" %}</a>
 
           <form class="logout-form" method="post" action="{% url 'logout' %}">
             {% csrf_token %}
-            <button class="nav-button" type="submit">Logout</button>
+            <button class="nav-button" type="submit">{% trans "Logout" %}</button>
           </form>
         {% else %}
-          <a href="{% url 'login' %}">Login</a>
-          <a class="nav-primary" href="{% url 'register' %}">Register</a>
+          <a href="{% url 'login' %}">{% trans "Login" %}</a>
+          <a class="nav-primary" href="{% url 'register' %}">{% trans "Register" %}</a>
         {% endif %}
+
+        <form class="language-form" action="{% url 'set_language' %}" method="post">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <label for="language-select" class="visually-hidden">{% trans "Select language" %}</label>
+          <select id="language-select" name="language" aria-label="{% trans 'Select language' %}" onchange="this.form.submit()">
+            <option value="en" {% if CURRENT_LANGUAGE == "en" %}selected{% endif %}>English</option>
+            <option value="hi" {% if CURRENT_LANGUAGE == "hi" %}selected{% endif %}>हिन्दी</option>
+          </select>
+        </form>
       </nav>
     </div>
   </header>
@@ -67,7 +82,7 @@
   </main>
 
   <footer class="site-footer">
-    Blood Bank Management System &middot; Team 9
+    {% trans "Blood Bank Management System" %} &middot; {% trans "Team 9" %}
   </footer>
 </body>
 </html>

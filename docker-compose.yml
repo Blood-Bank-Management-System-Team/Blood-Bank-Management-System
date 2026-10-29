@@ -1,3 +1,4 @@
+
 services:
   db:
     image: postgres:16
@@ -23,6 +24,30 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
+  backup:
+    image: postgres:16
+    environment:
+      DB_HOST: db
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      BACKUP_DIR: /backups
+    volumes:
+      - ./scripts/backup_db.sh:/usr/local/bin/backup_db.sh:ro
+      - ./backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        while true; do
+          /bin/sh /usr/local/bin/backup_db.sh || echo "Backup failed; check logs"
+          sleep 86400
+        done
+    restart: unless-stopped
 
 volumes:
   pgdata:

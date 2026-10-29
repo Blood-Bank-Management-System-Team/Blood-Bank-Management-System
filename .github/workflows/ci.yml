@@ -8,6 +8,24 @@ on:
     branches: [main]
 
 jobs:
+  # Smoke check for CD: only builds the image (no push) so a broken Dockerfile is caught on PRs.
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   build-and-test:
     runs-on: ubuntu-latest
 

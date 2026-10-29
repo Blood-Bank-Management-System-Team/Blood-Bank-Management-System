@@ -6,3 +6,6 @@ __pycache__/
 staticfiles/
 .vscode/
 db_before_inventory_fix.sqlite3
+
+# Generated database backups
+backups/

@@ -1,5 +1,5 @@
 /* BBMS UI — full-bleed blood-cell backgrounds, glass surfaces, SVG icons.
-   Main photo: static/img/blood-cells.jpg (optional). The generated SVGs are the fallback layer. */
+   Main photo: static/img/blood-cells.png (optional). The generated SVGs are the fallback layer. */
 
 :root {
   --crimson: #c1121f;
@@ -35,17 +35,17 @@ body {
 body.bg-home {
   background-image:
     linear-gradient(105deg, rgba(20, 2, 6, .82) 0%, rgba(20, 2, 6, .45) 55%, rgba(20, 2, 6, .25) 100%),
-    url("../img/blood-cells.jpg"), url("../img/hero.svg");
+    url("../img/blood-cells.png"), url("../img/hero.svg");
 }
 body.bg-auth {
   background-image:
     linear-gradient(180deg, rgba(20, 2, 6, .55), rgba(20, 2, 6, .7)),
-    url("../img/blood-cells.jpg"), url("../img/auth.svg");
+    url("../img/blood-cells.png"), url("../img/auth.svg");
 }
 body.bg-app {
   background-image:
     linear-gradient(180deg, rgba(20, 2, 6, .72), rgba(20, 2, 6, .6)),
-    url("../img/blood-cells.jpg"), url("../img/app.svg");
+    url("../img/blood-cells.png"), url("../img/app.svg");
 }
 
 a { color: var(--crimson); }
