@@ -1,0 +1,43 @@
+databases:
+  - name: bbms-postgres
+    databaseName: bbms
+    user: bbms_user
+    plan: free
+
+services:
+  - type: web
+    name: bbms-web
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health/
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_ALLOWED_HOSTS
+        value: bbms-web.onrender.com
+      - key: DJANGO_CSRF_TRUSTED_ORIGINS
+        value: https://bbms-web.onrender.com
+      - key: DB_NAME
+        fromDatabase:
+          name: bbms-postgres
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: bbms-postgres
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: bbms-postgres
+          property: password
+      - key: DB_HOST
+        fromDatabase:
+          name: bbms-postgres
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: bbms-postgres
+          property: port
