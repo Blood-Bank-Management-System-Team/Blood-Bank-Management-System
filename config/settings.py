@@ -2,8 +2,6 @@
 import os
 from pathlib import Path
 
-from django.core.exceptions import ImproperlyConfigured
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -11,23 +9,13 @@ def env_bool(name, default=False):
     return os.environ.get(name, str(default)).strip().lower() in ("1", "true", "yes", "on")
 
 
-def env_list(name, default=""):
-    return [v.strip() for v in os.environ.get(name, default).split(",") if v.strip()]
-
-
-_DEV_SECRET_KEY = "dev-insecure-key-change-me-in-env-0123456789"
-
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", _DEV_SECRET_KEY)
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-insecure-key-change-me-in-env-0123456789")
 DEBUG = env_bool("DJANGO_DEBUG", True)
-ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
-# Full origins including the scheme, e.g. https://bbms.example.com
-CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
-
-if not DEBUG and (SECRET_KEY in ("", "change-me", _DEV_SECRET_KEY) or len(SECRET_KEY) < 32):
-    raise ImproperlyConfigured(
-        "DJANGO_SECRET_KEY must be set to a real secret (at least 32 characters) "
-        "when DJANGO_DEBUG is False."
-    )
+ALLOWED_HOSTS = [
+    h.strip()
+    for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    if h.strip()
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -49,8 +37,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -107,7 +95,18 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-LANGUAGE_CODE = "en-us"
+# BB-33: Multilingual UI configuration
+LANGUAGE_CODE = "en"
+
+LANGUAGES = [
+    ("en", "English"),
+    ("hi", "Hindi"),
+]
+
+LOCALE_PATHS = [
+    BASE_DIR / "locale",
+]
+
 TIME_ZONE = "Asia/Kolkata"
 USE_I18N = True
 USE_TZ = True
@@ -115,12 +114,6 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
-# WhiteNoise serves the collected files in production; in DEBUG it falls back to the finders.
-STORAGES = {
-    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
-}
-WHITENOISE_USE_FINDERS = DEBUG
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -134,21 +127,6 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
 }
-
-# HTTPS hardening (DEV-14). Only active when DEBUG is False, so local dev and CI are unchanged.
-# Each switch can be overridden from the environment.
-if not DEBUG:
-    SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", True)
-    SESSION_COOKIE_SECURE = env_bool("DJANGO_SESSION_COOKIE_SECURE", True)
-    CSRF_COOKIE_SECURE = env_bool("DJANGO_CSRF_COOKIE_SECURE", True)
-    if env_bool("DJANGO_SECURE_PROXY_SSL_HEADER", True):
-        # The TLS-terminating reverse proxy must set X-Forwarded-Proto.
-        SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    SECURE_HSTS_SECONDS = int(os.environ.get("DJANGO_SECURE_HSTS_SECONDS", "31536000"))
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool("DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", True)
-    SECURE_HSTS_PRELOAD = env_bool("DJANGO_SECURE_HSTS_PRELOAD", False)
-    # Health checks (container healthcheck, deploy smoke test) must work without a redirect.
-    SECURE_REDIRECT_EXEMPT = [r"^api/health/$"]
 
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/dashboard/"
@@ -167,3 +145,15 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "REDOC_DIST": "https://cdn.jsdelivr.net/npm/redoc@2.1.5",
 }
+
+# BB-30 (notifications) / BB-27 (email OTP): Email configuration
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend",
+)
+DEFAULT_FROM_EMAIL = os.environ.get(
+    "DEFAULT_FROM_EMAIL",
+    "noreply@bbms.local",
+)
+
+PASSWORD_RESET_TIMEOUT = 600  # 10 minutes

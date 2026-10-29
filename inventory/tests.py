@@ -478,3 +478,143 @@ class BloodCompatibilityTests(TestCase):
     def test_invalid_blood_group_is_incompatible(self):
         self.assertFalse(is_blood_compatible("INVALID", "O+"))
         self.assertFalse(is_blood_compatible("O+", "INVALID"))
+
+
+class CrossBankSearchTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        self.hospital = User.objects.create_user(
+            username="cross_bank_hospital",
+            password="TestPass123!",
+            role="HOSPITAL",
+        )
+        self.client.force_authenticate(user=self.hospital)
+
+        self.url = "/api/inventory/cross-bank-search/"
+        today = timezone.localdate()
+
+        BloodStock.objects.create(
+            blood_group="O-",
+            location="Bengaluru",
+            available_units=3,
+            collection_date=today - timedelta(days=1),
+            expiry_date=today + timedelta(days=10),
+            status=BloodStock.StockStatus.AVAILABLE,
+        )
+        BloodStock.objects.create(
+            blood_group="O+",
+            location="Mysuru",
+            available_units=5,
+            collection_date=today - timedelta(days=1),
+            expiry_date=today + timedelta(days=5),
+            status=BloodStock.StockStatus.AVAILABLE,
+        )
+        BloodStock.objects.create(
+            blood_group="A+",
+            location="Bengaluru",
+            available_units=8,
+            collection_date=today - timedelta(days=1),
+            expiry_date=today + timedelta(days=10),
+            status=BloodStock.StockStatus.AVAILABLE,
+        )
+        BloodStock.objects.create(
+            blood_group="O-",
+            location="Mandya",
+            available_units=7,
+            collection_date=today - timedelta(days=20),
+            expiry_date=today - timedelta(days=1),
+            status=BloodStock.StockStatus.AVAILABLE,
+        )
+
+    def test_search_returns_compatible_stock_across_locations(self):
+        response = self.client.get(
+            self.url,
+            {"blood_group": "O+", "location": "Bengaluru"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["total_units"], 8)
+
+        locations = {
+            item["location"] for item in response.data["results"]
+        }
+        self.assertEqual(locations, {"Bengaluru", "Mysuru"})
+
+    def test_requested_location_is_prioritised(self):
+        response = self.client.get(
+            self.url,
+            {"blood_group": "O+", "location": "Bengaluru"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data["results"][0]["is_requested_location"])
+
+    def test_incompatible_and_expired_stock_are_excluded(self):
+        response = self.client.get(
+            self.url,
+            {"blood_group": "O+", "location": "Bengaluru"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        groups = {
+            item["blood_group"] for item in response.data["results"]
+        }
+        locations = {
+            item["location"] for item in response.data["results"]
+        }
+
+        self.assertNotIn("A+", groups)
+        self.assertNotIn("Mandya", locations)
+
+    def test_missing_parameters_return_bad_request(self):
+        response = self.client.get(
+            self.url,
+            {"blood_group": "O+"},
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_invalid_blood_group_returns_bad_request(self):
+        response = self.client.get(
+            self.url,
+            {"blood_group": "XYZ", "location": "Bengaluru"},
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_donor_cannot_use_cross_bank_search(self):
+        donor = User.objects.create_user(
+            username="cross_bank_donor",
+            password="TestPass123!",
+            role="DONOR",
+        )
+        self.client.force_authenticate(user=donor)
+
+        response = self.client.get(
+            self.url,
+            {"blood_group": "O+", "location": "Bengaluru"},
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_search_does_not_change_stock_quantities(self):
+        stock_before = list(
+            BloodStock.objects.order_by("pk").values_list(
+                "pk", "available_units"
+            )
+        )
+
+        self.client.get(
+            self.url,
+            {"blood_group": "O+", "location": "Bengaluru"},
+        )
+
+        stock_after = list(
+            BloodStock.objects.order_by("pk").values_list(
+                "pk", "available_units"
+            )
+        )
+
+        self.assertEqual(stock_before, stock_after)

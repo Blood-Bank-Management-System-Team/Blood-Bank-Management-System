@@ -2,8 +2,7 @@
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import F, Q
-from django.utils import timezone
+from django.db.models import Q
 
 
 class DonationCamp(models.Model):
@@ -74,3 +73,28 @@ class CampRegistration(models.Model):
 
     def __str__(self):
         return f"{self.donor} - {self.camp}"
+
+
+class CampDonation(models.Model):
+    registration = models.OneToOneField(
+        CampRegistration,
+        on_delete=models.PROTECT,
+        related_name="donation_record",
+    )
+    units_collected = models.PositiveSmallIntegerField()
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="camp_donations_recorded",
+    )
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-recorded_at"]
+
+    def __str__(self):
+        return (
+            f"{self.registration.donor} - "
+            f"{self.registration.camp.name} "
+            f"({self.units_collected} units)"
+        )

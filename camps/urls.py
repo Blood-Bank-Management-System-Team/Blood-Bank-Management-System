@@ -3,6 +3,7 @@ from django.urls import path
 
 from .views import (
     CampCreateView,
+    CampDonationRecordView,
     CampListView,
     CampManageView,
     CampPublishView,
@@ -22,5 +23,10 @@ urlpatterns = [
         "camps/<int:pk>/register/",
         CampRegisterView.as_view(),
         name="camp-register",
+    ),
+    path(
+        "camps/<int:pk>/record-donation/",
+        CampDonationRecordView.as_view(),
+        name="camp-record-donation",
     ),
 ]

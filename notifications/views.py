@@ -2,14 +2,17 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from rest_framework import serializers
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from drf_spectacular.utils import extend_schema, inline_serializer
 
 from inventory.models import BloodUnit
+from users.permissions import IsAdminRole
+
 from .models import AdminNotification, LowStockThreshold
+from .services import emergency_broadcast
 
 
 class LowStockAlertsView(APIView):
@@ -105,3 +108,44 @@ class LowStockAlertsView(APIView):
                     )
 
         return Response(alerts)
+
+
+class EmergencyBroadcastSerializer(serializers.Serializer):
+    blood_group = serializers.ChoiceField(
+        choices=[
+            "A+", "A-", "B+", "B-",
+            "AB+", "AB-", "O+", "O-",
+        ]
+    )
+    city = serializers.CharField(
+        max_length=100,
+        trim_whitespace=True,
+    )
+    details = serializers.CharField(
+        max_length=2000,
+        required=False,
+        allow_blank=True,
+    )
+
+    def validate_city(self, value):
+        if not value.strip():
+            raise serializers.ValidationError(
+                "City cannot be empty."
+            )
+        return value.strip()
+
+
+class EmergencyBroadcastView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminRole]
+
+    def post(self, request):
+        serializer = EmergencyBroadcastSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        result = emergency_broadcast(
+            blood_group=serializer.validated_data["blood_group"],
+            city=serializer.validated_data["city"],
+            details=serializer.validated_data.get("details", ""),
+        )
+
+        return Response(result)
