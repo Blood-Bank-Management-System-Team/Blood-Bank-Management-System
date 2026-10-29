@@ -1,13 +1,15 @@
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta
+from threading import Barrier
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.db import close_old_connections
+from django.test import TestCase, TransactionTestCase, skipUnlessDBFeature
 from django.utils import timezone
 from rest_framework.test import APIClient
 
 from inventory.models import BloodStock
 from bloodrequests.models import BloodRequest, BloodReservation
-
 
 User = get_user_model()
 
@@ -487,3 +489,86 @@ class BloodRequestAPITests(TestCase):
         )
 
         self.assertEqual(response.status_code, 404)
+
+
+class BloodRequestConcurrencyTests(TransactionTestCase):
+    """Concurrency tests that require real database row-lock support."""
+
+    reset_sequences = True
+
+    def setUp(self):
+        self.hospital = User.objects.create_user(
+            username="concurrent_hospital",
+            password="TestPass123!",
+            role="HOSPITAL",
+        )
+        self.staff = User.objects.create_user(
+            username="concurrent_staff",
+            password="TestPass123!",
+            role="STAFF",
+        )
+
+        today = timezone.localdate()
+        self.stock = BloodStock.objects.create(
+            blood_group="O+",
+            location="Bengaluru",
+            available_units=2,
+            collection_date=today - timedelta(days=1),
+            expiry_date=today + timedelta(days=10),
+            status=BloodStock.StockStatus.AVAILABLE,
+        )
+
+        self.requests = [
+            BloodRequest.objects.create(
+                requester=self.hospital,
+                blood_group="O+",
+                units=2,
+                location="Bengaluru",
+                priority="emergency",
+            )
+            for _ in range(2)
+        ]
+
+    @skipUnlessDBFeature("has_select_for_update")
+    def test_two_requests_cannot_allocate_the_same_stock(self):
+        barrier = Barrier(2)
+
+        def approve_request(request_id):
+            close_old_connections()
+            try:
+                client = APIClient()
+                client.force_authenticate(user=self.staff)
+                barrier.wait(timeout=10)
+
+                response = client.post(
+                    f"/api/blood-requests/{request_id}/process/",
+                    {"status": "approved"},
+                    format="json",
+                )
+                return response.status_code
+            finally:
+                close_old_connections()
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            results = list(
+                executor.map(
+                    approve_request,
+                    [str(request.request_id) for request in self.requests],
+                )
+            )
+
+        self.assertCountEqual(results, [200, 409])
+
+        self.stock.refresh_from_db()
+        self.assertEqual(self.stock.available_units, 0)
+
+        approved_count = BloodRequest.objects.filter(
+            status=BloodRequest.RequestStatus.APPROVED,
+        ).count()
+        self.assertEqual(approved_count, 1)
+
+        active_reservations = BloodReservation.objects.filter(active=True)
+        self.assertEqual(
+            sum(reservation.units for reservation in active_reservations),
+            2,
+        )

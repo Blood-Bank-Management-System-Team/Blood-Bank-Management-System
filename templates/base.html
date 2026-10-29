@@ -1,4 +1,6 @@
-{% load static %}<!DOCTYPE html>
+
+{% load static %}
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -30,7 +32,9 @@
 
   <header class="site-header">
     <div class="nav-container">
-      <a class="brand" href="{% url 'home' %}"><svg class="icon"><use href="#i-drop"/></svg>BBMS</a>
+      <a class="brand" href="{% url 'home' %}">
+        <svg class="icon"><use href="#i-drop"/></svg>BBMS
+      </a>
 
       <nav class="site-nav" aria-label="Main navigation">
         <a href="{% url 'home' %}">Home</a>
@@ -61,6 +65,21 @@
       </nav>
     </div>
   </header>
+
+  <!-- Django success, info, warning and error messages -->
+  {% if messages %}
+    <div class="container" style="max-width: 1100px; margin: 20px auto; padding: 0 20px;">
+      {% for message in messages %}
+        <div
+          class="alert alert-{{ message.tags|default:'info' }}"
+          role="alert"
+          style="padding: 14px 18px; margin-bottom: 12px; border-radius: 8px; background: #f5f5f5; color: #222; border: 1px solid #ddd;"
+        >
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
 
   <main class="{% block mainclass %}{% endblock %}">
     {% block content %}{% endblock %}
