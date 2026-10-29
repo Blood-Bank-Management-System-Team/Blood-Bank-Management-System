@@ -22,6 +22,7 @@ urlpatterns = [
     path("", include("donors.web_urls")),
     path("", include("users.web_urls")),
     path("", include("reports.web_urls")),
+    path("", include("camps.urls")),
 
     path("admin/", admin.site.urls),
     path("api/notifications/", include("notifications.urls")),
