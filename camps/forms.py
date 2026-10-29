@@ -1,8 +1,7 @@
-
 from django import forms
 from django.utils import timezone
 
-from .models import DonationCamp
+from .models import CampDonation, CampRegistration, DonationCamp
 
 
 class DonationCampForm(forms.ModelForm):
@@ -23,5 +22,37 @@ class DonationCampForm(forms.ModelForm):
     def clean_available_slots(self):
         slots = self.cleaned_data["available_slots"]
         if slots < 1:
-            raise forms.ValidationError("At least one slot must be available.")
+            raise forms.ValidationError(
+                "At least one slot must be available."
+            )
         return slots
+
+
+class CampDonationForm(forms.ModelForm):
+    class Meta:
+        model = CampDonation
+        fields = ["registration", "units_collected"]
+
+    def __init__(self, *args, camp=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if camp is not None:
+            self.fields["registration"].queryset = (
+                CampRegistration.objects
+                .filter(
+                    camp=camp,
+                    donation_record__isnull=True,
+                )
+                .select_related("donor__user")
+                .order_by("donor__user__username")
+            )
+
+    def clean_units_collected(self):
+        units = self.cleaned_data["units_collected"]
+
+        if not 1 <= units <= 2:
+            raise forms.ValidationError(
+                "The number of collected units must be between 1 and 2."
+            )
+
+        return units
