@@ -1,3 +1,5 @@
+from drf_spectacular.utils import extend_schema_field
+
 from rest_framework import serializers
 
 from .models import DonationRecord, DonorProfile
@@ -51,9 +53,11 @@ class DonorListSerializer(serializers.ModelSerializer):
             "next_eligible_date",
         )
 
-    def get_eligible(self, obj):
+    @extend_schema_field(serializers.BooleanField)
+    def get_eligible(self, obj) -> bool:
         return obj.eligibility().eligible
 
+    @extend_schema_field(serializers.DateField(allow_null=True))
     def get_next_eligible_date(self, obj):
         return obj.eligibility().next_eligible_date
 

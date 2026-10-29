@@ -3,14 +3,22 @@ from rest_framework import generics, status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 from users.permissions import IsDonor, IsStaffOrAdmin
 
 from .certificates import certificate_response, user_can_download
 from .models import DonationRecord, DonorProfile
-from .serializers import DonationRecordSerializer, DonorListSerializer, DonorProfileSerializer, EligibilitySerializer
+from .serializers import (
+    DonationRecordSerializer,
+    DonorListSerializer,
+    DonorProfileSerializer,
+    EligibilitySerializer,
+)
 
-NO_PROFILE = {"detail": "Donor profile not found. Complete your donor profile first."}
+NO_PROFILE = {
+    "detail": "Donor profile not found. Complete your donor profile first."
+}
 
 
 class DonorProfileView(APIView):
@@ -19,87 +27,213 @@ class DonorProfileView(APIView):
     def get_profile(self, request):
         return DonorProfile.objects.filter(user=request.user).first()
 
+    @extend_schema(
+        responses={
+            200: DonorProfileSerializer,
+            404: OpenApiResponse(
+                description="Donor profile not found."
+            ),
+        },
+        description="Retrieve the authenticated donor's profile.",
+    )
     def get(self, request):
         profile = self.get_profile(request)
         if profile is None:
             return Response(NO_PROFILE, status=status.HTTP_404_NOT_FOUND)
         return Response(DonorProfileSerializer(profile).data)
 
+    @extend_schema(
+        request=DonorProfileSerializer,
+        responses={
+            201: DonorProfileSerializer,
+            400: OpenApiResponse(
+                description="Invalid donor profile data."
+            ),
+            409: OpenApiResponse(
+                description="Donor profile already exists."
+            ),
+        },
+        description="Create a donor profile for the authenticated donor.",
+    )
     def post(self, request):
         if self.get_profile(request) is not None:
             return Response(
-                {"detail": "Donor profile already exists; use PUT to update it."},
+                {
+                    "detail": (
+                        "Donor profile already exists; use PUT to update it."
+                    )
+                },
                 status=status.HTTP_409_CONFLICT,
             )
+
         serializer = DonorProfileSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+        return Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    @extend_schema(
+        request=DonorProfileSerializer,
+        responses={
+            200: DonorProfileSerializer,
+            400: OpenApiResponse(
+                description="Invalid donor profile data."
+            ),
+            404: OpenApiResponse(
+                description="Donor profile not found."
+            ),
+        },
+        description="Update the authenticated donor's profile.",
+    )
     def put(self, request):
         profile = self.get_profile(request)
         if profile is None:
             return Response(NO_PROFILE, status=status.HTTP_404_NOT_FOUND)
-        serializer = DonorProfileSerializer(profile, data=request.data)
+
+        serializer = DonorProfileSerializer(
+            profile,
+            data=request.data,
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
+
         return Response(serializer.data)
 
 
 class DonorEligibilityView(APIView):
     permission_classes = [IsDonor]
 
+    @extend_schema(
+        responses={
+            200: EligibilitySerializer,
+            404: OpenApiResponse(
+                description="Donor profile not found."
+            ),
+        },
+        description="Check the authenticated donor's donation eligibility.",
+    )
     def get(self, request):
-        profile = DonorProfile.objects.filter(user=request.user).first()
+        profile = DonorProfile.objects.filter(
+            user=request.user
+        ).first()
+
         if profile is None:
             return Response(NO_PROFILE, status=status.HTTP_404_NOT_FOUND)
-        return Response(EligibilitySerializer(profile.eligibility()).data)
+
+        return Response(
+            EligibilitySerializer(profile.eligibility()).data
+        )
 
 
+@extend_schema(
+    description=(
+        "List donor profiles. Supports filtering by blood group and city."
+    )
+)
 class DonorListView(generics.ListAPIView):
     permission_classes = [IsStaffOrAdmin]
     serializer_class = DonorListSerializer
 
     def get_queryset(self):
         qs = DonorProfile.objects.select_related("user").order_by("id")
+
         blood_group = self.request.query_params.get("blood_group")
         if blood_group:
-            # an unescaped "+" in a query string arrives as a space (e.g. "O+" -> "O ")
-            qs = qs.filter(blood_group=blood_group.replace(" ", "+").strip().upper())
+            # An unescaped "+" in a query string arrives as a space.
+            # Example: "O+" may arrive as "O ".
+            qs = qs.filter(
+                blood_group=blood_group.replace(" ", "+").strip().upper()
+            )
+
         city = self.request.query_params.get("city")
         if city:
             qs = qs.filter(city__iexact=city.strip())
+
         return qs
 
 
 class DonorDonationCreateView(APIView):
     permission_classes = [IsStaffOrAdmin]
 
+    @extend_schema(
+        request=DonationRecordSerializer,
+        responses={
+            201: DonationRecordSerializer,
+            400: OpenApiResponse(
+                description=(
+                    "Invalid donation data or donor is not eligible."
+                )
+            ),
+        },
+        description="Record a donation for a specified donor.",
+    )
     def post(self, request, donor_id):
         donor = get_object_or_404(DonorProfile, pk=donor_id)
+
         serializer = DonationRecordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
         result = donor.eligibility()
         if not result.eligible:
             return Response(
-                {"detail": "Donor is not currently eligible to donate.", "reasons": result.reasons},
+                {
+                    "detail": "Donor is not currently eligible to donate.",
+                    "reasons": result.reasons,
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        serializer.save(donor=donor, recorded_by=request.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        serializer.save(
+            donor=donor,
+            recorded_by=request.user,
+        )
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
+@extend_schema(
+    description=(
+        "List donation records belonging to the authenticated donor."
+    )
+)
 class MyDonationsView(generics.ListAPIView):
     permission_classes = [IsDonor]
     serializer_class = DonationRecordSerializer
 
     def get_queryset(self):
-        return DonationRecord.objects.filter(donor__user=self.request.user).order_by("-donation_date", "-id")
+        return DonationRecord.objects.filter(
+            donor__user=self.request.user
+        ).order_by("-donation_date", "-id")
 
 
 class DonationCertificateApiView(APIView):
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                description="Donation certificate PDF."
+            ),
+            403: OpenApiResponse(
+                description="Permission denied."
+            ),
+            404: OpenApiResponse(
+                description="Donation record not found."
+            ),
+        },
+        description="Download a donation certificate.",
+    )
     def get(self, request, pk):
-        record = get_object_or_404(DonationRecord.objects.select_related("donor__user"), pk=pk)
+        record = get_object_or_404(
+            DonationRecord.objects.select_related("donor__user"),
+            pk=pk,
+        )
+
         if not user_can_download(request.user, record):
             raise PermissionDenied
+
         return certificate_response(record)

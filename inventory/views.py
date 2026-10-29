@@ -1,12 +1,18 @@
-
 from django.db.models import Sum
 from django.utils import timezone
-from rest_framework import generics, status
+
+from rest_framework import generics, serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from users.permissions import IsHospital, IsStaffOrAdmin
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    extend_schema,
+    inline_serializer,
+)
 
+from users.permissions import IsHospital, IsStaffOrAdmin
 from .models import BloodStock, BloodUnit
 from .serializers import BloodAvailabilitySerializer, BloodUnitSerializer
 
@@ -14,24 +20,66 @@ from .serializers import BloodAvailabilitySerializer, BloodUnitSerializer
 class BloodAvailabilityView(APIView):
     permission_classes = [IsHospital]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="blood_group",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="Blood group to search for, such as O+ or A-.",
+            ),
+            OpenApiParameter(
+                name="location",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="Hospital or blood-bank location.",
+            ),
+        ],
+        responses={
+            200: inline_serializer(
+                name="BloodAvailabilityResponse",
+                fields={
+                    "blood_group": serializers.CharField(),
+                    "location": serializers.CharField(),
+                    "available_units": serializers.IntegerField(),
+                    "status": serializers.CharField(),
+                },
+            ),
+            400: OpenApiTypes.OBJECT,
+            404: OpenApiTypes.OBJECT,
+        },
+        description=(
+            "Check available blood stock for a specified blood group "
+            "and location. Only hospital users can access this endpoint."
+        ),
+    )
     def get(self, request):
         blood_group = request.query_params.get(
             "blood_group", ""
         ).strip().upper()
-        location = request.query_params.get("location", "").strip()
+
+        location = request.query_params.get(
+            "location", ""
+        ).strip()
 
         valid_groups = BloodStock.BloodGroup.values
 
         if not blood_group or not location:
             return Response(
-                {"detail": "Both blood_group and location are required."},
-                status=status.HTTP_400_BAD_REQUEST,
+                {
+                    "detail": (
+                        "Both blood_group and location are required."
+                    )
+                },
+                status=400,
             )
 
         if blood_group not in valid_groups:
             return Response(
                 {"detail": "Invalid blood group."},
-                status=status.HTTP_400_BAD_REQUEST,
+                status=400,
             )
 
         today = timezone.localdate()
@@ -43,19 +91,22 @@ class BloodAvailabilityView(APIView):
             expiry_date__gte=today,
         )
 
-        total_units = matching_stock.aggregate(
-            total=Sum("available_units")
-        )["total"] or 0
+        total_units = (
+            matching_stock.aggregate(
+                total=Sum("available_units")
+            )["total"]
+            or 0
+        )
 
         if total_units == 0:
             return Response(
                 {
                     "detail": (
-                        "No available blood stock found "
-                        "for this blood group and location."
+                        "No available blood stock found for this "
+                        "blood group and location."
                     )
                 },
-                status=status.HTTP_404_NOT_FOUND,
+                status=404,
             )
 
         return Response(
@@ -65,7 +116,7 @@ class BloodAvailabilityView(APIView):
                 "available_units": total_units,
                 "status": "available",
             },
-            status=status.HTTP_200_OK,
+            status=200,
         )
 
 
@@ -74,7 +125,6 @@ class BloodUnitListCreateView(generics.ListCreateAPIView):
     serializer_class = BloodUnitSerializer
     permission_classes = [IsStaffOrAdmin]
 
-    # Supported filters and their corresponding model fields.
     FILTER_FIELDS = {
         "blood_group": "blood_group",
         "location": "bank_location",
@@ -82,7 +132,6 @@ class BloodUnitListCreateView(generics.ListCreateAPIView):
         "collection_date": "collection_date",
     }
 
-    # Supported sorting fields.
     SORT_FIELDS = {
         "blood_group": "blood_group",
         "location": "bank_location",
@@ -92,37 +141,36 @@ class BloodUnitListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         queryset = BloodUnit.objects.all()
-        params = self.request.query_params
 
-        # Preserve the existing availability filter.
-        if params.get("available", "").lower() == "true":
+        # Optionally return only units that are not expired
+        # and have a positive quantity.
+        if self.request.query_params.get("available", "").lower() == "true":
             queryset = queryset.filter(
                 expiry_date__gte=timezone.localdate(),
                 quantity__gt=0,
             )
 
-        # Filter by blood group, location, expiry date,
-        # and collection date.
-        for param, field in self.FILTER_FIELDS.items():
-            value = params.get(param, "").strip()
+        # Apply supported filters.
+        for parameter, model_field in self.FILTER_FIELDS.items():
+            value = self.request.query_params.get(parameter)
 
-            if not value:
-                continue
+            if value:
+                if parameter in {"blood_group", "location"}:
+                    queryset = queryset.filter(
+                        **{f"{model_field}__iexact": value}
+                    )
+                else:
+                    queryset = queryset.filter(
+                        **{model_field: value}
+                    )
 
-            if param in ("blood_group", "location"):
-                queryset = queryset.filter(
-                    **{f"{field}__iexact": value}
-                )
-            else:
-                queryset = queryset.filter(
-                    **{field: value}
-                )
+        # Apply supported sorting.
+        sort_by = self.request.query_params.get("sort_by")
+        sort_order = self.request.query_params.get(
+            "sort_order", "asc"
+        ).lower()
 
-        # Sort by a supported field in ascending or descending order.
-        sort_by = params.get("sort_by", "").strip()
-        sort_order = params.get("sort_order", "asc").strip().lower()
-
-        if sort_by in self.SORT_FIELDS and sort_order in ("asc", "desc"):
+        if sort_by in self.SORT_FIELDS and sort_order in {"asc", "desc"}:
             field = self.SORT_FIELDS[sort_by]
 
             if sort_order == "desc":
@@ -151,6 +199,24 @@ class BloodUnitDetailView(generics.RetrieveUpdateDestroyAPIView):
 class StockSummaryView(APIView):
     permission_classes = [IsStaffOrAdmin]
 
+    @extend_schema(
+        responses={
+            200: inline_serializer(
+                name="StockSummaryItem",
+                many=True,
+                fields={
+                    "blood_group": serializers.CharField(),
+                    "bank_location": serializers.CharField(),
+                    "total_quantity": serializers.IntegerField(),
+                },
+            ),
+        },
+        description=(
+            "Retrieve available, non-expired blood-stock totals "
+            "grouped by blood group and blood-bank location. "
+            "Only staff and administrators can access this endpoint."
+        ),
+    )
     def get(self, request):
         stock = (
             BloodUnit.objects.filter(

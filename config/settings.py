@@ -1,4 +1,4 @@
-"""Django settings for the Blood Bank Management System (BBMS)."""
+﻿"""Django settings for the Blood Bank Management System (BBMS)."""
 import os
 from pathlib import Path
 
@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "camps",
     "notifications",
     "reports",
+    "drf_spectacular",
 ]
 
 MIDDLEWARE = [
@@ -124,11 +125,14 @@ WHITENOISE_USE_FINDERS = DEBUG
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
-    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
 }
 
 # HTTPS hardening (DEV-14). Only active when DEBUG is False, so local dev and CI are unchanged.
@@ -155,3 +159,11 @@ BBMS_MIN_DONATION_INTERVAL_DAYS = int(os.environ.get("BBMS_MIN_DONATION_INTERVAL
 BBMS_MIN_DONOR_AGE = int(os.environ.get("BBMS_MIN_DONOR_AGE", "18"))
 BBMS_MAX_DONOR_AGE = int(os.environ.get("BBMS_MAX_DONOR_AGE", "65"))
 BBMS_MIN_DONOR_WEIGHT_KG = int(os.environ.get("BBMS_MIN_DONOR_WEIGHT_KG", "50"))
+
+# BB-31: API Documentation
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Blood Bank Management System API",
+    "DESCRIPTION": "API documentation for the Blood Bank Management System (BBMS).",
+    "VERSION": "1.0.0",
+    "REDOC_DIST": "https://cdn.jsdelivr.net/npm/redoc@2.1.5",
+}

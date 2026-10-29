@@ -1,0 +1,1974 @@
+openapi: 3.0.3
+info:
+  title: Blood Bank Management System API
+  version: 1.0.0
+  description: API documentation for the Blood Bank Management System (BBMS).
+paths:
+  /api/auth/admin/users/:
+    get:
+      operationId: auth_admin_users_list
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminUser'
+          description: ''
+    post:
+      operationId: auth_admin_users_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminUser'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUser'
+          description: ''
+  /api/auth/admin/users/{id}/:
+    get:
+      operationId: auth_admin_users_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUser'
+          description: ''
+    put:
+      operationId: auth_admin_users_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminUser'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUser'
+          description: ''
+    patch:
+      operationId: auth_admin_users_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminUser'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUser'
+          description: ''
+    delete:
+      operationId: auth_admin_users_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/auth/login/:
+    post:
+      operationId: auth_login_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Login'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Login'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Login'
+          description: ''
+  /api/auth/me/:
+    get:
+      operationId: auth_me_retrieve
+      description: Retrieve the currently authenticated user's details.
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/auth/profile/:
+    get:
+      operationId: auth_profile_retrieve
+      description: Retrieve the authenticated user's profile.
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+    put:
+      operationId: auth_profile_update
+      description: Update the authenticated user's profile.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Profile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Profile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Profile'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+  /api/auth/refresh/:
+    post:
+      operationId: auth_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/auth/register/:
+    post:
+      operationId: auth_register_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Register'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Register'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Register'
+        required: true
+      security:
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Register'
+          description: ''
+  /api/blood/:
+    get:
+      operationId: blood_list
+      tags:
+      - blood
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BloodUnit'
+          description: ''
+    post:
+      operationId: blood_create
+      tags:
+      - blood
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BloodUnit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BloodUnit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BloodUnit'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BloodUnit'
+          description: ''
+  /api/blood-requests/:
+    post:
+      operationId: blood_requests_create
+      tags:
+      - blood-requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BloodRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BloodRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BloodRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BloodRequest'
+          description: ''
+  /api/blood-requests/{request_id}/cancel/:
+    post:
+      operationId: blood_requests_cancel_create
+      description: Cancel an approved blood request and release its reserved stock.
+        Only the request owner or staff/admin may cancel it.
+      parameters:
+      - in: path
+        name: request_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - blood-requests
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BloodRequestCancelResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/blood-requests/{request_id}/process/:
+    post:
+      operationId: blood_requests_process_create
+      description: Approve, reject, or fulfil a blood request. Approving a request
+        reserves compatible blood stock.
+      parameters:
+      - in: path
+        name: request_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - blood-requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BloodRequestProcessInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BloodRequestProcessInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BloodRequestProcessInput'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BloodRequestProcessResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/blood-requests/list/:
+    get:
+      operationId: blood_requests_list_list
+      description: Hospitals see their own requests; staff/admin can see all requests.
+      tags:
+      - blood-requests
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BloodRequest'
+          description: ''
+  /api/blood/{id}/:
+    get:
+      operationId: blood_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - blood
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BloodUnit'
+          description: ''
+    put:
+      operationId: blood_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - blood
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BloodUnit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BloodUnit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BloodUnit'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BloodUnit'
+          description: ''
+    patch:
+      operationId: blood_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - blood
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBloodUnit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBloodUnit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBloodUnit'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BloodUnit'
+          description: ''
+    delete:
+      operationId: blood_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - blood
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/blood/availability/:
+    get:
+      operationId: blood_availability_retrieve
+      description: Check available blood stock for a specified blood group and location.
+        Only hospital users can access this endpoint.
+      parameters:
+      - in: query
+        name: blood_group
+        schema:
+          type: string
+        description: Blood group to search for, such as O+ or A-.
+        required: true
+      - in: query
+        name: location
+        schema:
+          type: string
+        description: Hospital or blood-bank location.
+        required: true
+      tags:
+      - blood
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BloodAvailabilityResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/blood/stock-summary/:
+    get:
+      operationId: blood_stock_summary_list
+      description: Retrieve available, non-expired blood-stock totals grouped by blood
+        group and blood-bank location. Only staff and administrators can access this
+        endpoint.
+      tags:
+      - blood
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StockSummaryItem'
+          description: ''
+  /api/donors/:
+    get:
+      operationId: donors_list
+      description: List donor profiles. Supports filtering by blood group and city.
+      tags:
+      - donors
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DonorList'
+          description: ''
+  /api/donors/{donor_id}/donations/:
+    post:
+      operationId: donors_donations_create
+      description: Record a donation for a specified donor.
+      parameters:
+      - in: path
+        name: donor_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - donors
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DonationRecord'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DonationRecord'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DonationRecord'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DonationRecord'
+          description: ''
+        '400':
+          description: Invalid donation data or donor is not eligible.
+  /api/donors/donations/{id}/certificate/:
+    get:
+      operationId: donors_donations_certificate_retrieve
+      description: Download a donation certificate.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - donors
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: Donation certificate PDF.
+        '403':
+          description: Permission denied.
+        '404':
+          description: Donation record not found.
+  /api/donors/eligibility/:
+    get:
+      operationId: donors_eligibility_retrieve
+      description: Check the authenticated donor's donation eligibility.
+      tags:
+      - donors
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Eligibility'
+          description: ''
+        '404':
+          description: Donor profile not found.
+  /api/donors/me/donations/:
+    get:
+      operationId: donors_me_donations_list
+      description: List donation records belonging to the authenticated donor.
+      tags:
+      - donors
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DonationRecord'
+          description: ''
+  /api/donors/profile/:
+    get:
+      operationId: donors_profile_retrieve
+      description: Retrieve the authenticated donor's profile.
+      tags:
+      - donors
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DonorProfile'
+          description: ''
+        '404':
+          description: Donor profile not found.
+    post:
+      operationId: donors_profile_create
+      description: Create a donor profile for the authenticated donor.
+      tags:
+      - donors
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DonorProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DonorProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DonorProfile'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DonorProfile'
+          description: ''
+        '400':
+          description: Invalid donor profile data.
+        '409':
+          description: Donor profile already exists.
+    put:
+      operationId: donors_profile_update
+      description: Update the authenticated donor's profile.
+      tags:
+      - donors
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DonorProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DonorProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DonorProfile'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DonorProfile'
+          description: ''
+        '400':
+          description: Invalid donor profile data.
+        '404':
+          description: Donor profile not found.
+  /api/inventory/:
+    get:
+      operationId: inventory_list
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BloodUnit'
+          description: ''
+    post:
+      operationId: inventory_create
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BloodUnit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BloodUnit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BloodUnit'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BloodUnit'
+          description: ''
+  /api/inventory/{id}/:
+    get:
+      operationId: inventory_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BloodUnit'
+          description: ''
+    put:
+      operationId: inventory_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BloodUnit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BloodUnit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BloodUnit'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BloodUnit'
+          description: ''
+    patch:
+      operationId: inventory_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBloodUnit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBloodUnit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBloodUnit'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BloodUnit'
+          description: ''
+    delete:
+      operationId: inventory_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/inventory/availability/:
+    get:
+      operationId: inventory_availability_retrieve
+      description: Check available blood stock for a specified blood group and location.
+        Only hospital users can access this endpoint.
+      parameters:
+      - in: query
+        name: blood_group
+        schema:
+          type: string
+        description: Blood group to search for, such as O+ or A-.
+        required: true
+      - in: query
+        name: location
+        schema:
+          type: string
+        description: Hospital or blood-bank location.
+        required: true
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BloodAvailabilityResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/inventory/stock-summary/:
+    get:
+      operationId: inventory_stock_summary_list
+      description: Retrieve available, non-expired blood-stock totals grouped by blood
+        group and blood-bank location. Only staff and administrators can access this
+        endpoint.
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StockSummaryItem'
+          description: ''
+  /api/notifications/low-stock/:
+    get:
+      operationId: notifications_low_stock_list
+      description: Retrieve low-stock alerts for blood groups whose available quantities
+        fall below their configured minimum thresholds. Only administrators can access
+        this endpoint.
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LowStockAlert'
+          description: ''
+  /api/reports/audit-logs/:
+    get:
+      operationId: reports_audit_logs_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditLogList'
+          description: ''
+  /api/reports/summary/:
+    get:
+      operationId: reports_summary_retrieve
+      description: Generate a report summary for the specified date range. Only staff
+        and administrators can access this endpoint.
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+        description: Start date for the report.
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+        description: End date for the report.
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/schema/:
+    get:
+      operationId: schema_retrieve
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - json
+          - yaml
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - af
+          - ar
+          - ar-dz
+          - ast
+          - az
+          - be
+          - bg
+          - bn
+          - br
+          - bs
+          - ca
+          - ckb
+          - cs
+          - cy
+          - da
+          - de
+          - dsb
+          - el
+          - en
+          - en-au
+          - en-gb
+          - eo
+          - es
+          - es-ar
+          - es-co
+          - es-mx
+          - es-ni
+          - es-ve
+          - et
+          - eu
+          - fa
+          - fi
+          - fr
+          - fy
+          - ga
+          - gd
+          - gl
+          - he
+          - hi
+          - hr
+          - hsb
+          - hu
+          - hy
+          - ia
+          - id
+          - ig
+          - io
+          - is
+          - it
+          - ja
+          - ka
+          - kab
+          - kk
+          - km
+          - kn
+          - ko
+          - ky
+          - lb
+          - lt
+          - lv
+          - mk
+          - ml
+          - mn
+          - mr
+          - ms
+          - my
+          - nb
+          - ne
+          - nl
+          - nn
+          - os
+          - pa
+          - pl
+          - pt
+          - pt-br
+          - ro
+          - ru
+          - sk
+          - sl
+          - sq
+          - sr
+          - sr-latn
+          - sv
+          - sw
+          - ta
+          - te
+          - tg
+          - th
+          - tk
+          - tr
+          - tt
+          - udm
+          - ug
+          - uk
+          - ur
+          - uz
+          - vi
+          - zh-hans
+          - zh-hant
+      tags:
+      - schema
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/yaml:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+components:
+  schemas:
+    ActionEnum:
+      enum:
+      - CREATE
+      - UPDATE
+      - DELETE
+      - LOGIN
+      - LOGIN_FAILED
+      - APPROVE
+      - REJECT
+      - FULFIL
+      - OTHER
+      type: string
+      description: |-
+        * `CREATE` - Create
+        * `UPDATE` - Update
+        * `DELETE` - Delete
+        * `LOGIN` - Login
+        * `LOGIN_FAILED` - Login failed
+        * `APPROVE` - Approve
+        * `REJECT` - Reject
+        * `FULFIL` - Fulfil
+        * `OTHER` - Other
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          title: Email address
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          maxLength: 20
+        role:
+          $ref: '#/components/schemas/Role635Enum'
+        is_active:
+          type: boolean
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+      required:
+      - id
+      - username
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+        user:
+          type: string
+          readOnly: true
+        action:
+          $ref: '#/components/schemas/ActionEnum'
+        model_name:
+          type: string
+          maxLength: 100
+        object_id:
+          type: string
+          maxLength: 64
+        description:
+          type: string
+          maxLength: 255
+        ip_address:
+          type: string
+          nullable: true
+      required:
+      - action
+      - id
+      - timestamp
+      - user
+    BloodAvailabilityResponse:
+      type: object
+      properties:
+        blood_group:
+          type: string
+        location:
+          type: string
+        available_units:
+          type: integer
+        status:
+          type: string
+      required:
+      - available_units
+      - blood_group
+      - location
+      - status
+    BloodGroupEnum:
+      enum:
+      - A+
+      - A-
+      - B+
+      - B-
+      - AB+
+      - AB-
+      - O+
+      - O-
+      type: string
+      description: |-
+        * `A+` - A+
+        * `A-` - A-
+        * `B+` - B+
+        * `B-` - B-
+        * `AB+` - AB+
+        * `AB-` - AB-
+        * `O+` - O+
+        * `O-` - O-
+    BloodRequest:
+      type: object
+      properties:
+        request_id:
+          type: string
+          format: uuid
+          readOnly: true
+        blood_group:
+          $ref: '#/components/schemas/BloodGroupEnum'
+        units:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        location:
+          type: string
+          maxLength: 100
+        priority:
+          $ref: '#/components/schemas/PriorityEnum'
+        required_date:
+          type: string
+          format: date
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/BloodRequestStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - blood_group
+      - created_at
+      - location
+      - priority
+      - request_id
+      - status
+      - units
+    BloodRequestCancelResponse:
+      type: object
+      properties:
+        request_id:
+          type: string
+        status:
+          type: string
+        detail:
+          type: string
+      required:
+      - detail
+      - request_id
+      - status
+    BloodRequestProcessInput:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/BloodRequestProcessInputStatusEnum'
+      required:
+      - status
+    BloodRequestProcessInputStatusEnum:
+      enum:
+      - approved
+      - rejected
+      - fulfilled
+      type: string
+      description: |-
+        * `approved` - approved
+        * `rejected` - rejected
+        * `fulfilled` - fulfilled
+    BloodRequestProcessResponse:
+      type: object
+      properties:
+        request_id:
+          type: string
+        blood_group:
+          type: string
+        units:
+          type: integer
+        location:
+          type: string
+        status:
+          type: string
+      required:
+      - blood_group
+      - location
+      - request_id
+      - status
+      - units
+    BloodRequestStatusEnum:
+      enum:
+      - pending
+      - approved
+      - rejected
+      - fulfilled
+      - cancelled
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `approved` - Approved
+        * `rejected` - Rejected
+        * `fulfilled` - Fulfilled
+        * `cancelled` - Cancelled
+    BloodUnit:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        blood_group:
+          $ref: '#/components/schemas/BloodGroupEnum'
+        quantity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        collection_date:
+          type: string
+          format: date
+        expiry_date:
+          type: string
+          format: date
+        is_expired:
+          type: boolean
+          readOnly: true
+        is_available:
+          type: boolean
+          readOnly: true
+        bank_location:
+          type: string
+          maxLength: 200
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - bank_location
+      - blood_group
+      - collection_date
+      - created_at
+      - expiry_date
+      - id
+      - is_available
+      - is_expired
+      - quantity
+      - updated_at
+    DonationRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        donation_date:
+          type: string
+          format: date
+        blood_bank_location:
+          type: string
+          maxLength: 200
+        units:
+          type: integer
+          maximum: 2
+          minimum: 1
+        recorded_by:
+          type: string
+          readOnly: true
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - blood_bank_location
+      - created_at
+      - donation_date
+      - id
+      - recorded_by
+    DonorList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+        phone:
+          type: string
+        blood_group:
+          $ref: '#/components/schemas/BloodGroupEnum'
+        city:
+          type: string
+          maxLength: 100
+        last_donation_date:
+          type: string
+          format: date
+          nullable: true
+        eligible:
+          type: boolean
+          readOnly: true
+        next_eligible_date:
+          type: string
+          format: date
+          nullable: true
+          readOnly: true
+      required:
+      - blood_group
+      - city
+      - eligible
+      - id
+      - next_eligible_date
+      - phone
+      - username
+    DonorProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        blood_group:
+          $ref: '#/components/schemas/BloodGroupEnum'
+        date_of_birth:
+          type: string
+          format: date
+        weight_kg:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,1})?$
+        gender:
+          $ref: '#/components/schemas/GenderEnum'
+        address:
+          type: string
+        city:
+          type: string
+          maxLength: 100
+        last_donation_date:
+          type: string
+          format: date
+          nullable: true
+        has_chronic_illness:
+          type: boolean
+        on_medication:
+          type: boolean
+        recent_surgery_or_tattoo_6_months:
+          type: boolean
+        recent_illness_or_fever_2_weeks:
+          type: boolean
+        is_pregnant_or_breastfeeding:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - address
+      - blood_group
+      - city
+      - created_at
+      - date_of_birth
+      - gender
+      - id
+      - updated_at
+      - weight_kg
+    Eligibility:
+      type: object
+      properties:
+        eligible:
+          type: boolean
+        reasons:
+          type: array
+          items:
+            type: string
+        next_eligible_date:
+          type: string
+          format: date
+      required:
+      - eligible
+      - next_eligible_date
+      - reasons
+    GenderEnum:
+      enum:
+      - MALE
+      - FEMALE
+      - OTHER
+      type: string
+      description: |-
+        * `MALE` - Male
+        * `FEMALE` - Female
+        * `OTHER` - Other
+    Login:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - password
+      - username
+    LowStockAlert:
+      type: object
+      properties:
+        blood_group:
+          type: string
+        available_quantity:
+          type: integer
+        minimum_quantity:
+          type: integer
+        message:
+          type: string
+      required:
+      - available_quantity
+      - blood_group
+      - message
+      - minimum_quantity
+    PaginatedAuditLogList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLog'
+    PatchedAdminUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          title: Email address
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          maxLength: 20
+        role:
+          $ref: '#/components/schemas/Role635Enum'
+        is_active:
+          type: boolean
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+    PatchedBloodUnit:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        blood_group:
+          $ref: '#/components/schemas/BloodGroupEnum'
+        quantity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        collection_date:
+          type: string
+          format: date
+        expiry_date:
+          type: string
+          format: date
+        is_expired:
+          type: boolean
+          readOnly: true
+        is_available:
+          type: boolean
+          readOnly: true
+        bank_location:
+          type: string
+          maxLength: 200
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PriorityEnum:
+      enum:
+      - emergency
+      - scheduled
+      type: string
+      description: |-
+        * `emergency` - Emergency
+        * `scheduled` - Scheduled
+    Profile:
+      type: object
+      properties:
+        username:
+          type: string
+          readOnly: true
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+        role:
+          allOf:
+          - $ref: '#/components/schemas/Role635Enum'
+          readOnly: true
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+        phone:
+          oneOf:
+          - type: string
+            pattern: ^[6-9]\d{9}$
+          - type: string
+            maxLength: 0
+      required:
+      - email
+      - role
+      - username
+    Register:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          writeOnly: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RegisterRoleEnum'
+          default: DONOR
+        phone:
+          type: string
+          maxLength: 20
+      required:
+      - email
+      - id
+      - password
+      - username
+    RegisterRoleEnum:
+      enum:
+      - DONOR
+      type: string
+      description: '* `DONOR` - Donor'
+    Role635Enum:
+      enum:
+      - DONOR
+      - STAFF
+      - HOSPITAL
+      - ADMIN
+      type: string
+      description: |-
+        * `DONOR` - Donor
+        * `STAFF` - Blood Bank Staff
+        * `HOSPITAL` - Hospital/Patient
+        * `ADMIN` - Administrator
+    StockSummaryItem:
+      type: object
+      properties:
+        blood_group:
+          type: string
+        bank_location:
+          type: string
+        total_quantity:
+          type: integer
+      required:
+      - bank_location
+      - blood_group
+      - total_quantity
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - access
+      - refresh
+    User:
+      type: object
+      properties:
+        username:
+          type: string
+          readOnly: true
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+        email:
+          type: string
+          format: email
+          readOnly: true
+          title: Email address
+        role:
+          allOf:
+          - $ref: '#/components/schemas/Role635Enum'
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+      required:
+      - email
+      - phone
+      - role
+      - username
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
