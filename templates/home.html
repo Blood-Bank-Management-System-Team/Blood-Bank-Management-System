@@ -1,22 +1,23 @@
-{% extends "base.html" %}
 
-{% block title %}Welcome - Blood Bank Management System{% endblock %}
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Welcome" %} - {% trans "Blood Bank Management System" %}{% endblock %}
 {% block bodyclass %}bg-home{% endblock %}
 
 {% block content %}
 <section class="hero">
-  <span class="badge">Team 9 &middot; Software Engineering Project</span>
-  <h1>Blood Bank Management System</h1>
+  <span class="badge">{% trans "Team 9" %} &middot; {% trans "Software Engineering Project" %}</span>
+  <h1>{% trans "Blood Bank Management System" %}</h1>
   <p>
-    A centralized platform supporting blood donors, blood bank staff,
-    hospitals and administrators &mdash; so the right blood reaches the right patient, in time.
+    {% trans "A centralized platform supporting blood donors, blood bank staff, hospitals and administrators — so the right blood reaches the right patient, in time." %}
   </p>
   <div class="actions">
     {% if user.is_authenticated %}
-      <a class="btn" href="{% url 'dashboard' %}">Go to My Dashboard <svg class="icon"><use href="#i-arrow"/></svg></a>
+      <a class="btn" href="{% url 'dashboard' %}">{% trans "Go to My Dashboard" %} <svg class="icon"><use href="#i-arrow"/></svg></a>
     {% else %}
-      <a class="btn" href="{% url 'register' %}">Become a donor <svg class="icon"><use href="#i-arrow"/></svg></a>
-      <a class="btn btn-ghost" href="{% url 'login' %}">Login</a>
+      <a class="btn" href="{% url 'register' %}">{% trans "Become a donor" %} <svg class="icon"><use href="#i-arrow"/></svg></a>
+      <a class="btn btn-ghost" href="{% url 'login' %}">{% trans "Login" %}</a>
     {% endif %}
   </div>
 </section>
@@ -24,26 +25,26 @@
 <div class="card-grid cols-4">
   <section class="card glass">
     <div class="icon-tile"><svg class="icon"><use href="#i-drop"/></svg></div>
-    <h2>Blood Donors</h2>
-    <p>Access your donor account and manage your donor information.</p>
+    <h2>{% trans "Blood Donors" %}</h2>
+    <p>{% trans "Access your donor account and manage your donor information." %}</p>
   </section>
 
   <section class="card glass">
     <div class="icon-tile"><svg class="icon"><use href="#i-box"/></svg></div>
-    <h2>Blood Bank Staff</h2>
-    <p>Access the staff workspace for blood bank operations.</p>
+    <h2>{% trans "Blood Bank Staff" %}</h2>
+    <p>{% trans "Access the staff workspace for blood bank operations." %}</p>
   </section>
 
   <section class="card glass">
     <div class="icon-tile"><svg class="icon"><use href="#i-medical"/></svg></div>
-    <h2>Hospitals and Patients</h2>
-    <p>Access the hospital area for available blood request activities.</p>
+    <h2>{% trans "Hospitals and Patients" %}</h2>
+    <p>{% trans "Access the hospital area for available blood request activities." %}</p>
   </section>
 
   <section class="card glass">
     <div class="icon-tile"><svg class="icon"><use href="#i-shield"/></svg></div>
-    <h2>Administration</h2>
-    <p>Role-restricted access for authorized administrators.</p>
+    <h2>{% trans "Administration" %}</h2>
+    <p>{% trans "Role-restricted access for authorized administrators." %}</p>
   </section>
 </div>
 {% endblock %}
