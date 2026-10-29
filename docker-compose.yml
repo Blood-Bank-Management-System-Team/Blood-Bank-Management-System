@@ -15,7 +15,8 @@ services:
 
   web:
     build: .
-    env_file: .env
+    env_file:
+      - .env
     environment:
       DB_HOST: db
     ports:
@@ -24,5 +25,24 @@ services:
       db:
         condition: service_healthy
 
+  backup:
+    image: postgres:16
+    restart: unless-stopped
+    entrypoint: ["/bin/bash", "/scripts/backup-loop.sh"]
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      BACKUP_DIR: /backups
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-7}
+    volumes:
+      - ./scripts:/scripts:ro
+      - backupdata:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   pgdata:
+  backupdata:
