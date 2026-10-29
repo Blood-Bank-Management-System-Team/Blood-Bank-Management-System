@@ -120,9 +120,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
-    ],
+    "rest_framework_simplejwt.authentication.JWTAuthentication",
+    "rest_framework.authentication.SessionAuthentication",
+    "users.partner_auth.HospitalPartnerAPIKeyAuthentication",
+],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
@@ -157,3 +158,25 @@ DEFAULT_FROM_EMAIL = os.environ.get(
 )
 
 PASSWORD_RESET_TIMEOUT = 600  # 10 minutes
+
+# BB-31: API Documentation
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Blood Bank Management System API",
+    "DESCRIPTION": (
+        "API documentation for the Blood Bank Management System (BBMS). "
+        "External hospital partners can authenticate using their API key "
+        "in the Authorization header: Api-Key <key>."
+    ),
+    "VERSION": "1.0.0",
+    "REDOC_DIST": "https://cdn.jsdelivr.net/npm/redoc@2.1.5",
+    "COMPONENTS": {
+        "securitySchemes": {
+            "HospitalPartnerApiKey": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "Authorization",
+                "description": "Enter: Api-Key <your-partner-api-key>",
+            },
+        },
+    },
+}
