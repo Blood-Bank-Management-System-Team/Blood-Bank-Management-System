@@ -19,8 +19,8 @@ from .models import BloodUnit
 
 
 class BloodUnitSerializer(serializers.ModelSerializer):
-    is_expired = serializers.ReadOnlyField()
-    is_available = serializers.ReadOnlyField()
+    is_expired = serializers.BooleanField(read_only=True)
+    is_available = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = BloodUnit

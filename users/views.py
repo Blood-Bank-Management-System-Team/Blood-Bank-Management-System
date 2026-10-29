@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from django.http import JsonResponse
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import generics, status
@@ -40,18 +41,35 @@ class LoginView(TokenObtainPairView):
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        responses=UserSerializer,
+        description="Retrieve the currently authenticated user's details.",
+    )
     def get(self, request):
         return Response(UserSerializer(request.user).data)
 
 
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = ProfileSerializer
 
+    @extend_schema(
+        responses={200: ProfileSerializer},
+        description="Retrieve the authenticated user's profile.",
+    )
     def get(self, request):
         return Response(ProfileSerializer(request.user).data)
 
+    @extend_schema(
+        request=ProfileSerializer,
+        responses={200: ProfileSerializer},
+        description="Update the authenticated user's profile.",
+    )
     def put(self, request):
-        serializer = ProfileSerializer(request.user, data=request.data)
+        serializer = ProfileSerializer(
+            request.user,
+            data=request.data,
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)

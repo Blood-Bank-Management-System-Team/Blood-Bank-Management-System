@@ -1,9 +1,13 @@
 from django.db import transaction
 from django.utils import timezone
-from rest_framework import generics, status
+
+from rest_framework import generics, serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, inline_serializer
 
 from users.permissions import IsHospital, IsStaffOrAdmin
 from inventory.models import BloodStock
@@ -57,10 +61,39 @@ class BloodRequestListView(generics.ListAPIView):
 
 
 class BloodRequestProcessView(APIView):
-    """Staff/admin approve, reject, or fulfil requests."""
+    """Staff/admin approve, reject, or fulfil blood requests."""
 
     permission_classes = [IsStaffOrAdmin]
 
+    @extend_schema(
+        request=inline_serializer(
+            name="BloodRequestProcessInput",
+            fields={
+                "status": serializers.ChoiceField(
+                    choices=["approved", "rejected", "fulfilled"]
+                ),
+            },
+        ),
+        responses={
+            200: inline_serializer(
+                name="BloodRequestProcessResponse",
+                fields={
+                    "request_id": serializers.CharField(),
+                    "blood_group": serializers.CharField(),
+                    "units": serializers.IntegerField(),
+                    "location": serializers.CharField(),
+                    "status": serializers.CharField(),
+                },
+            ),
+            400: OpenApiTypes.OBJECT,
+            404: OpenApiTypes.OBJECT,
+            409: OpenApiTypes.OBJECT,
+        },
+        description=(
+            "Approve, reject, or fulfil a blood request. "
+            "Approving a request reserves compatible blood stock."
+        ),
+    )
     def post(self, request, request_id):
         new_status = request.data.get("status")
 
@@ -239,7 +272,33 @@ class BloodRequestCancelView(APIView):
     """Allow the request owner or staff/admin to cancel an approved request."""
 
     permission_classes = [IsAuthenticated]
+    serializer_class = BloodRequestSerializer
+    serializer_class = inline_serializer(
+        name="BloodRequestCancelInput",
+        fields={},
+    )
 
+    @extend_schema(
+        request=None,
+        responses={
+            200: inline_serializer(
+                name="BloodRequestCancelResponse",
+                fields={
+                    "request_id": serializers.CharField(),
+                    "status": serializers.CharField(),
+                    "detail": serializers.CharField(),
+                },
+            ),
+            400: OpenApiTypes.OBJECT,
+            403: OpenApiTypes.OBJECT,
+            404: OpenApiTypes.OBJECT,
+            409: OpenApiTypes.OBJECT,
+        },
+        description=(
+            "Cancel an approved blood request and release its reserved stock. "
+            "Only the request owner or staff/admin may cancel it."
+        ),
+    )
     def post(self, request, request_id):
         user = request.user
         role = str(getattr(user, "role", "")).lower()
