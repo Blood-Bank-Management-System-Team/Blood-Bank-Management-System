@@ -1,6 +1,7 @@
 from django.db.models import Sum
 from django.utils import timezone
 
+from drf_spectacular.types import OpenApiTypes
 from rest_framework import serializers
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
@@ -134,6 +135,15 @@ class EmergencyBroadcastSerializer(serializers.Serializer):
             )
         return value.strip()
 
+@extend_schema(
+    summary="Send an emergency blood availability broadcast",
+    description=(
+        "Allows an authenticated administrator to broadcast an emergency "
+        "blood requirement to relevant recipients."
+    ),
+    request=EmergencyBroadcastSerializer,
+    responses={200: OpenApiTypes.OBJECT},
+)
 
 class EmergencyBroadcastView(APIView):
     permission_classes = [IsAuthenticated, IsAdminRole]

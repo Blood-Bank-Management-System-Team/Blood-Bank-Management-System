@@ -1,3 +1,5 @@
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 from django.db.models import Sum
 from django.utils import timezone
 
@@ -231,6 +233,34 @@ class StockSummaryView(APIView):
         )
 
         return Response(list(stock))
+
+@extend_schema(
+    summary="Search compatible blood stock across locations",
+    description=(
+        "Searches available, unexpired blood stock compatible with the "
+        "recipient's blood group. Results prioritize the requested location."
+    ),
+    parameters=[
+        OpenApiParameter(
+            name="blood_group",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            required=True,
+            description="Recipient blood group, such as O+ or AB-.",
+        ),
+        OpenApiParameter(
+            name="location",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            required=True,
+            description="Location to prioritize in the results.",
+        ),
+    ],
+    responses={
+        200: OpenApiTypes.OBJECT,
+        400: OpenApiTypes.OBJECT,
+    },
+)
 
 class CrossBankSearchView(APIView):
     """
