@@ -214,7 +214,7 @@ class CampDonationRecordView(LoginRequiredMixin, View):
                     camp=camp,
                 )
 
-                donation = CampDonation.objects.create(
+                CampDonation.objects.create(
                     registration=registration,
                     units_collected=units,
                     recorded_by=request.user,

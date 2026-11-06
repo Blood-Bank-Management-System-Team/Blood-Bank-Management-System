@@ -1,5 +1,3 @@
-from drf_spectacular.utils import extend_schema, OpenApiParameter
-from drf_spectacular.types import OpenApiTypes
 from django.db.models import Sum
 from django.utils import timezone
 
@@ -18,7 +16,7 @@ from users.permissions import IsHospital, IsStaffOrAdmin
 
 from .compatibility import is_blood_compatible
 from .models import BloodStock, BloodUnit
-from .serializers import BloodAvailabilitySerializer, BloodUnitSerializer
+from .serializers import BloodUnitSerializer
 
 
 class BloodAvailabilityView(APIView):

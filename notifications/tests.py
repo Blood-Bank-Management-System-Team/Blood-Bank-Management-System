@@ -1,7 +1,6 @@
 from datetime import date, timedelta
 from unittest.mock import patch
 
-from django.test import override_settings
 from donors.models import DonorProfile
 from notifications.models import NotificationDeliveryLog
 

@@ -2,7 +2,9 @@ openapi: 3.0.3
 info:
   title: Blood Bank Management System API
   version: 1.0.0
-  description: API documentation for the Blood Bank Management System (BBMS).
+  description: 'API documentation for the Blood Bank Management System (BBMS). External
+    hospital partners can authenticate using their API key in the Authorization header:
+    Api-Key <key>.'
 paths:
   /api/auth/admin/users/:
     get:
@@ -12,6 +14,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -40,6 +43,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '201':
           content:
@@ -61,6 +65,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -93,6 +98,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -124,6 +130,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -144,6 +151,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '204':
           description: No response body
@@ -183,6 +191,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -199,6 +208,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -226,6 +236,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -294,6 +305,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -322,6 +334,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '201':
           content:
@@ -349,6 +362,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '201':
           content:
@@ -373,6 +387,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -437,6 +452,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -474,6 +490,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -497,6 +514,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -529,6 +547,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -560,6 +579,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -580,6 +600,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '204':
           description: No response body
@@ -606,6 +627,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -627,6 +649,46 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/blood/cross-bank-search/:
+    get:
+      operationId: blood_cross_bank_search_retrieve
+      description: Searches available, unexpired blood stock compatible with the recipient's
+        blood group. Results prioritize the requested location.
+      summary: Search compatible blood stock across locations
+      parameters:
+      - in: query
+        name: blood_group
+        schema:
+          type: string
+        description: Recipient blood group, such as O+ or AB-.
+        required: true
+      - in: query
+        name: location
+        schema:
+          type: string
+        description: Location to prioritize in the results.
+        required: true
+      tags:
+      - blood
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - HospitalPartnerApiKey: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/blood/stock-summary/:
     get:
       operationId: blood_stock_summary_list
@@ -638,6 +700,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -656,6 +719,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -692,6 +756,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '201':
           content:
@@ -716,6 +781,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           description: Donation certificate PDF.
@@ -732,6 +798,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -750,6 +817,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -768,6 +836,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -797,6 +866,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '201':
           content:
@@ -828,6 +898,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -847,6 +918,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -875,6 +947,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '201':
           content:
@@ -896,6 +969,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -928,6 +1002,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -959,6 +1034,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -979,6 +1055,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '204':
           description: No response body
@@ -1005,6 +1082,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -1026,6 +1104,46 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/inventory/cross-bank-search/:
+    get:
+      operationId: inventory_cross_bank_search_retrieve
+      description: Searches available, unexpired blood stock compatible with the recipient's
+        blood group. Results prioritize the requested location.
+      summary: Search compatible blood stock across locations
+      parameters:
+      - in: query
+        name: blood_group
+        schema:
+          type: string
+        description: Recipient blood group, such as O+ or AB-.
+        required: true
+      - in: query
+        name: location
+        schema:
+          type: string
+        description: Location to prioritize in the results.
+        required: true
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - HospitalPartnerApiKey: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/inventory/stock-summary/:
     get:
       operationId: inventory_stock_summary_list
@@ -1037,6 +1155,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -1045,6 +1164,38 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/StockSummaryItem'
+          description: ''
+  /api/notifications/emergency-broadcast/:
+    post:
+      operationId: notifications_emergency_broadcast_create
+      description: Allows an authenticated administrator to broadcast an emergency
+        blood requirement to relevant recipients.
+      summary: Send an emergency blood availability broadcast
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmergencyBroadcast'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EmergencyBroadcast'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EmergencyBroadcast'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - HospitalPartnerApiKey: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
           description: ''
   /api/notifications/low-stock/:
     get:
@@ -1057,6 +1208,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -1087,6 +1239,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -1117,6 +1270,7 @@ paths:
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       responses:
         '200':
           content:
@@ -1153,110 +1307,14 @@ paths:
         schema:
           type: string
           enum:
-          - af
-          - ar
-          - ar-dz
-          - ast
-          - az
-          - be
-          - bg
-          - bn
-          - br
-          - bs
-          - ca
-          - ckb
-          - cs
-          - cy
-          - da
-          - de
-          - dsb
-          - el
           - en
-          - en-au
-          - en-gb
-          - eo
-          - es
-          - es-ar
-          - es-co
-          - es-mx
-          - es-ni
-          - es-ve
-          - et
-          - eu
-          - fa
-          - fi
-          - fr
-          - fy
-          - ga
-          - gd
-          - gl
-          - he
           - hi
-          - hr
-          - hsb
-          - hu
-          - hy
-          - ia
-          - id
-          - ig
-          - io
-          - is
-          - it
-          - ja
-          - ka
-          - kab
-          - kk
-          - km
-          - kn
-          - ko
-          - ky
-          - lb
-          - lt
-          - lv
-          - mk
-          - ml
-          - mn
-          - mr
-          - ms
-          - my
-          - nb
-          - ne
-          - nl
-          - nn
-          - os
-          - pa
-          - pl
-          - pt
-          - pt-br
-          - ro
-          - ru
-          - sk
-          - sl
-          - sq
-          - sr
-          - sr-latn
-          - sv
-          - sw
-          - ta
-          - te
-          - tg
-          - th
-          - tk
-          - tr
-          - tt
-          - udm
-          - ug
-          - uk
-          - ur
-          - uz
-          - vi
-          - zh-hans
-          - zh-hant
       tags:
       - schema
       security:
       - jwtAuth: []
       - cookieAuth: []
+      - HospitalPartnerApiKey: []
       - {}
       responses:
         '200':
@@ -1332,7 +1390,7 @@ components:
           type: string
           maxLength: 20
         role:
-          $ref: '#/components/schemas/Role635Enum'
+          $ref: '#/components/schemas/UserRoleEnum'
         is_active:
           type: boolean
           title: Active
@@ -1420,9 +1478,8 @@ components:
           $ref: '#/components/schemas/BloodGroupEnum'
         units:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 0
-          format: int64
         location:
           type: string
           maxLength: 100
@@ -1521,9 +1578,8 @@ components:
           $ref: '#/components/schemas/BloodGroupEnum'
         quantity:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 0
-          format: int64
         collection_date:
           type: string
           format: date
@@ -1694,6 +1750,20 @@ components:
       - eligible
       - next_eligible_date
       - reasons
+    EmergencyBroadcast:
+      type: object
+      properties:
+        blood_group:
+          $ref: '#/components/schemas/BloodGroupEnum'
+        city:
+          type: string
+          maxLength: 100
+        details:
+          type: string
+          maxLength: 2000
+      required:
+      - blood_group
+      - city
     GenderEnum:
       enum:
       - MALE
@@ -1785,7 +1855,7 @@ components:
           type: string
           maxLength: 20
         role:
-          $ref: '#/components/schemas/Role635Enum'
+          $ref: '#/components/schemas/UserRoleEnum'
         is_active:
           type: boolean
           title: Active
@@ -1801,9 +1871,8 @@ components:
           $ref: '#/components/schemas/BloodGroupEnum'
         quantity:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 0
-          format: int64
         collection_date:
           type: string
           format: date
@@ -1845,7 +1914,7 @@ components:
             only.
         role:
           allOf:
-          - $ref: '#/components/schemas/Role635Enum'
+          - $ref: '#/components/schemas/UserRoleEnum'
           readOnly: true
         first_name:
           type: string
@@ -1886,7 +1955,7 @@ components:
           writeOnly: true
         role:
           allOf:
-          - $ref: '#/components/schemas/RegisterRoleEnum'
+          - $ref: '#/components/schemas/SelfRegisterRoleEnum'
           default: DONOR
         phone:
           type: string
@@ -1896,23 +1965,11 @@ components:
       - id
       - password
       - username
-    RegisterRoleEnum:
+    SelfRegisterRoleEnum:
       enum:
       - DONOR
       type: string
       description: '* `DONOR` - Donor'
-    Role635Enum:
-      enum:
-      - DONOR
-      - STAFF
-      - HOSPITAL
-      - ADMIN
-      type: string
-      description: |-
-        * `DONOR` - Donor
-        * `STAFF` - Blood Bank Staff
-        * `HOSPITAL` - Hospital/Patient
-        * `ADMIN` - Administrator
     StockSummaryItem:
       type: object
       properties:
@@ -1953,7 +2010,7 @@ components:
           title: Email address
         role:
           allOf:
-          - $ref: '#/components/schemas/Role635Enum'
+          - $ref: '#/components/schemas/UserRoleEnum'
           readOnly: true
         phone:
           type: string
@@ -1963,7 +2020,24 @@ components:
       - phone
       - role
       - username
+    UserRoleEnum:
+      enum:
+      - DONOR
+      - STAFF
+      - HOSPITAL
+      - ADMIN
+      type: string
+      description: |-
+        * `DONOR` - Donor
+        * `STAFF` - Blood Bank Staff
+        * `HOSPITAL` - Hospital/Patient
+        * `ADMIN` - Administrator
   securitySchemes:
+    HospitalPartnerApiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Enter your hospital partner API key.
     cookieAuth:
       type: apiKey
       in: cookie
