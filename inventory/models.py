@@ -2,8 +2,8 @@
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.db import transaction
 from django.utils import timezone
-
 
 
 class BloodStock(models.Model):
@@ -26,7 +26,7 @@ class BloodStock(models.Model):
         max_length=3,
         choices=BloodGroup.choices,
     )
-    location = models.CharField(max_length=100)
+    location = models.CharField(max_length=200)
     available_units = models.PositiveIntegerField(
         validators=[MinValueValidator(0)],
     )
@@ -66,6 +66,7 @@ class BloodStock(models.Model):
             f"({self.available_units} units)"
         )
 
+
 class BloodUnit(models.Model):
     BLOOD_GROUPS = [
         ("A+", "A+"),
@@ -86,6 +87,17 @@ class BloodUnit(models.Model):
     collection_date = models.DateField()
     expiry_date = models.DateField()
     bank_location = models.CharField(max_length=200)
+
+    # The allocatable stock row that searches, request approval and reports read.
+    # Kept in sync by save(); approvals/cancellations update quantity directly.
+    stock = models.OneToOneField(
+        BloodStock,
+        on_delete=models.SET_NULL,
+        related_name="unit",
+        null=True,
+        blank=True,
+        editable=False,
+    )
 
     created_by = models.ForeignKey(
         "users.User",
@@ -112,6 +124,28 @@ class BloodUnit(models.Model):
     @property
     def is_available(self):
         return not self.is_expired and self.quantity > 0
+
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            self.sync_stock()
+            super().save(*args, **kwargs)
+
+    def sync_stock(self):
+        """Create or update the BloodStock row that mirrors this unit."""
+        stock = self.stock or BloodStock()
+        if stock.pk is None or stock.status != BloodStock.StockStatus.DISPOSED:
+            stock.status = (
+                BloodStock.StockStatus.AVAILABLE
+                if self.quantity > 0
+                else BloodStock.StockStatus.RESERVED
+            )
+        stock.blood_group = self.blood_group
+        stock.location = self.bank_location
+        stock.available_units = self.quantity
+        stock.collection_date = self.collection_date
+        stock.expiry_date = self.expiry_date
+        stock.save()
+        self.stock = stock
 
     def __str__(self):
         return f"{self.blood_group} - Unit {self.id}"

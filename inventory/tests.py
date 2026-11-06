@@ -618,3 +618,89 @@ class CrossBankSearchTests(TestCase):
         )
 
         self.assertEqual(stock_before, stock_after)
+
+
+class BloodUnitStockSyncTests(APITestCase):
+    """Units added by staff must be visible to search and request approval."""
+
+    def setUp(self):
+        self.staff = User.objects.create_user(
+            username="sync_staff", password="TestPass123!", role="STAFF"
+        )
+        self.hospital = User.objects.create_user(
+            username="sync_hospital", password="TestPass123!", role="HOSPITAL"
+        )
+        self.today = timezone.localdate()
+
+    def add_unit_via_api(self, quantity=4):
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.post(
+            "/api/inventory/",
+            {
+                "blood_group": "O+",
+                "quantity": quantity,
+                "collection_date": str(self.today - timedelta(days=1)),
+                "expiry_date": str(self.today + timedelta(days=30)),
+                "bank_location": "Mysuru",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201)
+        return BloodUnit.objects.get(pk=response.data["id"])
+
+    def test_created_unit_is_searchable_by_hospital(self):
+        self.add_unit_via_api(quantity=4)
+        self.client.force_authenticate(user=self.hospital)
+        response = self.client.get(
+            "/api/inventory/availability/",
+            {"blood_group": "O+", "location": "Mysuru"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["available_units"], 4)
+
+    def test_updating_unit_updates_stock(self):
+        unit = self.add_unit_via_api(quantity=4)
+        self.client.patch(f"/api/inventory/{unit.pk}/", {"quantity": 7}, format="json")
+        unit.refresh_from_db()
+        self.assertEqual(unit.stock.available_units, 7)
+
+    def test_deleting_unit_removes_stock(self):
+        unit = self.add_unit_via_api(quantity=4)
+        stock_id = unit.stock_id
+        self.client.delete(f"/api/inventory/{unit.pk}/")
+        self.assertFalse(BloodStock.objects.filter(pk=stock_id).exists())
+
+    def test_approve_and_cancel_request_against_api_added_stock(self):
+        unit = self.add_unit_via_api(quantity=4)
+
+        self.client.force_authenticate(user=self.hospital)
+        created = self.client.post(
+            "/api/blood-requests/",
+            {
+                "blood_group": "O+",
+                "units": 3,
+                "location": "Mysuru",
+                "priority": "scheduled",
+                "required_date": str(self.today + timedelta(days=2)),
+            },
+            format="json",
+        )
+        self.assertEqual(created.status_code, 201, created.data)
+        request_id = created.data["request_id"]
+
+        self.client.force_authenticate(user=self.staff)
+        approved = self.client.post(
+            f"/api/blood-requests/{request_id}/process/",
+            {"status": "approved"},
+            format="json",
+        )
+        self.assertEqual(approved.status_code, 200, approved.data)
+        unit.refresh_from_db()
+        self.assertEqual(unit.quantity, 1)
+        self.assertEqual(unit.stock.available_units, 1)
+
+        cancelled = self.client.post(f"/api/blood-requests/{request_id}/cancel/")
+        self.assertEqual(cancelled.status_code, 200, cancelled.data)
+        unit.refresh_from_db()
+        self.assertEqual(unit.quantity, 4)
+        self.assertEqual(unit.stock.available_units, 4)
