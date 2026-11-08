@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}My Requests - BBMS{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <span class="badge">Hospital Portal</span>
+  <h1>My Requests</h1>
+  <p class="muted">Blood requests submitted by your hospital, newest first.</p>
+</section>
+
+<section class="card" style="max-width:none">
+  {% for message in messages %}<p class="badge {% if message.tags == 'error' %}badge-no{% else %}badge-ok{% endif %}">{{ message }}</p>{% endfor %}
+  {% if blood_requests %}
+    <table>
+      <thead><tr><th>Request ID</th><th>Blood group</th><th>Units</th><th>Priority</th><th>Status</th><th>Date</th><th></th></tr></thead>
+      <tbody>
+        {% for r in blood_requests %}
+          <tr><td>{{ r.request_id }}</td><td>{{ r.blood_group }}</td><td>{{ r.units }}</td><td>{{ r.get_priority_display }}</td><td>{{ r.get_status_display }}</td><td>{{ r.created_at|date:"j M Y" }}</td>
+            <td>{% if r.status == "approved" %}
+              <form method="post" action="{% url 'blood-request-cancel-page' r.request_id %}">
+                {% csrf_token %}<button class="btn btn-secondary">Cancel</button>
+              </form>
+            {% endif %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted">You have not submitted any requests yet.</p>
+  {% endif %}
+  <a class="btn" href="{% url 'blood-request-new' %}">Request blood</a>
+  <a class="btn btn-secondary" href="{% url 'dashboard-hospital' %}">Back to dashboard</a>
+</section>
+{% endblock %}

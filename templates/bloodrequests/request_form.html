@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Request Blood - BBMS{% endblock %}
+{% block bodyclass %}bg-auth{% endblock %}
+{% block mainclass %}centered{% endblock %}
+{% block content %}
+<section class="card auth-card wide">
+  <div class="icon-tile"><svg class="icon"><use href="#i-drop"/></svg></div>
+  <h1>Request Blood</h1>
+  <p class="lead">Submit a blood request. Blood bank staff will review it.</p>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Submit request</button>
+  </form>
+  <p class="form-links"><a href="{% url 'blood-request-mine' %}">My requests</a> &middot; <a href="{% url 'dashboard-hospital' %}">Back to dashboard</a></p>
+</section>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Blood Inventory - BBMS{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <span class="badge">Staff Portal</span>
+  <h1>Blood Inventory</h1>
+  <p class="muted">Units added here are immediately available for hospital searches and request approval.</p>
+</section>
+
+<div class="card-grid">
+  <section class="card">
+    <div class="icon-tile"><svg class="icon"><use href="#i-box"/></svg></div>
+    <h2>Add blood units</h2>
+    {% for message in messages %}<p class="badge badge-ok">{{ message }}</p>{% endfor %}
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit">Add units</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <div class="icon-tile"><svg class="icon"><use href="#i-chart"/></svg></div>
+    <h2>Current stock</h2>
+    {% if units %}
+      <table>
+        <thead><tr><th>Group</th><th>Units</th><th>Location</th><th>Expires</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for u in units %}
+            <tr>
+              <td>{{ u.blood_group }}</td>
+              <td>{{ u.quantity }}</td>
+              <td>{{ u.bank_location }}</td>
+              <td>{{ u.expiry_date|date:"j M Y" }}</td>
+              <td>{% if u.is_expired %}Expired{% elif u.quantity == 0 %}Allocated{% else %}Available{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="muted">No blood units recorded yet.</p>
+    {% endif %}
+    <a class="btn btn-secondary" href="{% url 'dashboard' %}">Back to dashboard</a>
+  </section>
+</div>
+{% endblock %}

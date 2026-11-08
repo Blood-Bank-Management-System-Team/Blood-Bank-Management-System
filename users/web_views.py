@@ -27,6 +27,17 @@ from .password_reset import (
 )
 
 
+class RoleRequiredMixin(LoginRequiredMixin):
+    """Login required; 403 unless the user's role is in ``allowed_roles``."""
+
+    allowed_roles = ()
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and request.user.role not in self.allowed_roles:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+
 
 ROLE_DASHBOARDS = {
     User.Role.DONOR: "dashboard-donor",

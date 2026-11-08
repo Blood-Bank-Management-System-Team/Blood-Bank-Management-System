@@ -27,14 +27,22 @@
     <div class="icon-tile"><svg class="icon"><use href="#i-box"/></svg></div>
     <h2>Blood Inventory</h2>
     <p>Access the inventory workspace to manage available blood units.</p>
-    <p class="muted">Inventory management features will be available through the inventory module.</p>
+    <a class="btn" href="{% url 'inventory-page' %}">Manage inventory</a>
   </section>
 
   <section class="card">
     <div class="icon-tile"><svg class="icon"><use href="#i-drop"/></svg></div>
     <h2>Blood Requests</h2>
     <p>Review the blood-request workflow for hospital requirements.</p>
-    <p class="muted">Request processing features will be connected as the module develops.</p>
+    <a class="btn" href="{% url 'blood-request-process-page' %}">Process requests</a>
+  </section>
+
+  <section class="card">
+    <div class="icon-tile"><svg class="icon"><use href="#i-calendar"/></svg></div>
+    <h2>Donation Camps</h2>
+    <p>Create, publish and manage donation camps.</p>
+    <a class="btn" href="{% url 'camp-manage' %}">Manage camps</a>
+    <a class="btn btn-secondary" href="{% url 'blood-availability-page' %}">Search availability</a>
   </section>
 
   <section class="card">

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Process Requests - BBMS{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <span class="badge">Staff Portal</span>
+  <h1>Process Blood Requests</h1>
+  <p class="muted">Approving a request reserves compatible, unexpired stock at the request's location.</p>
+</section>
+
+<section class="card" style="max-width:none">
+  {% for message in messages %}
+    <p class="badge {% if message.tags == 'error' %}badge-no{% else %}badge-ok{% endif %}">{{ message }}</p>
+  {% endfor %}
+  <h2>Open requests</h2>
+  {% if open_requests %}
+    <table>
+      <thead><tr><th>Hospital</th><th>Blood group</th><th>Units</th><th>Location</th><th>Priority</th><th>Needed by</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for r in open_requests %}
+          <tr>
+            <td>{{ r.requester.get_full_name|default:r.requester.username }}</td>
+            <td>{{ r.blood_group }}</td>
+            <td>{{ r.units }}</td>
+            <td>{{ r.location }}</td>
+            <td>{{ r.get_priority_display }}</td>
+            <td>{{ r.required_date|date:"j M Y"|default:"—" }}</td>
+            <td>{{ r.get_status_display }}</td>
+            <td>
+              <form method="post" action="{% url 'blood-request-action' r.request_id %}" style="display:inline">
+                {% csrf_token %}
+                {% if r.status == "pending" %}
+                  <button class="btn" name="status" value="approved">Approve</button>
+                  <button class="btn btn-secondary" name="status" value="rejected">Reject</button>
+                {% elif r.status == "approved" %}
+                  <button class="btn" name="status" value="fulfilled">Mark fulfilled</button>
+                  <button class="btn btn-secondary" name="status" value="cancelled">Cancel</button>
+                {% endif %}
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted">No open requests right now.</p>
+  {% endif %}
+
+  <h2>Recently closed</h2>
+  {% if closed_requests %}
+    <table>
+      <thead><tr><th>Hospital</th><th>Blood group</th><th>Units</th><th>Location</th><th>Status</th><th>Submitted</th></tr></thead>
+      <tbody>
+        {% for r in closed_requests %}
+          <tr>
+            <td>{{ r.requester.get_full_name|default:r.requester.username }}</td>
+            <td>{{ r.blood_group }}</td>
+            <td>{{ r.units }}</td>
+            <td>{{ r.location }}</td>
+            <td>{{ r.get_status_display }}</td>
+            <td>{{ r.created_at|date:"j M Y" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted">No closed requests yet.</p>
+  {% endif %}
+  <a class="btn btn-secondary" href="{% url 'dashboard' %}">Back to dashboard</a>
+</section>
+{% endblock %}
