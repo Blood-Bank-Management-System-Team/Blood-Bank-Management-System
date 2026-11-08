@@ -174,14 +174,45 @@ BBMS_MAX_DONOR_AGE = int(os.environ.get("BBMS_MAX_DONOR_AGE", "65"))
 BBMS_MIN_DONOR_WEIGHT_KG = int(os.environ.get("BBMS_MIN_DONOR_WEIGHT_KG", "50"))
 
 # BB-30 (notifications) / BB-27 (email OTP): Email configuration
-EMAIL_BACKEND = os.environ.get(
-    "EMAIL_BACKEND",
-    "django.core.mail.backends.console.EmailBackend",
-)
+# Delivery is picked from the environment, in this order:
+#   1. EMAIL_BACKEND, if set explicitly.
+#   2. BREVO_API_KEY -> Brevo's HTTPS API. Use this on Render's free plan,
+#      which blocks outbound SMTP ports 25, 465 and 587.
+#   3. EMAIL_HOST -> plain SMTP (e.g. smtp.gmail.com with an app password).
+#   4. Otherwise the console backend: emails (and OTPs) print in the server terminal.
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
+EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", "15"))
+
+if os.environ.get("EMAIL_BACKEND"):
+    EMAIL_BACKEND = os.environ["EMAIL_BACKEND"]
+elif BREVO_API_KEY:
+    EMAIL_BACKEND = "users.email_backends.BrevoEmailBackend"
+elif EMAIL_HOST:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
 DEFAULT_FROM_EMAIL = os.environ.get(
     "DEFAULT_FROM_EMAIL",
-    "noreply@bbms.local",
+    EMAIL_HOST_USER or "noreply@bbms.local",
 )
+
+# One cache shared by every server process. The default per-process memory
+# cache lost OTPs whenever the dev server reloaded, and under gunicorn's
+# multiple workers an OTP stored by one worker was invisible to the others.
+# The table is created by users/migrations/0003_create_cache_table.py.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "bbms_cache",
+    }
+}
 
 PASSWORD_RESET_TIMEOUT = 600  # 10 minutes
 

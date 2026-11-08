@@ -245,3 +245,13 @@ class PasswordResetViewTests(TestCase):
             },
         )
         self.assertEqual(login_response.status_code, 302)
+
+
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+class PasswordResetOtpWhitespaceTests(TestCase):
+    def test_otp_with_surrounding_spaces_is_accepted(self):
+        cache.clear()
+        user = User.objects.create_user(username="spaceuser", email="space@example.com", password=STRONG_PASSWORD)
+        self.assertTrue(request_password_reset(user.email))
+        otp = next(w.rstrip(".") for w in mail.outbox[-1].body.split() if w.rstrip(".").isdigit())
+        self.assertIsNotNone(verify_password_reset_otp(user.email, f" {otp} "))

@@ -41,3 +41,9 @@ services:
         fromDatabase:
           name: bbms-postgres
           property: port
+      # Email for password-reset OTPs and notifications. Render's free plan blocks
+      # SMTP ports, so use Brevo's HTTPS API: set both values in the Render dashboard.
+      - key: BREVO_API_KEY
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
