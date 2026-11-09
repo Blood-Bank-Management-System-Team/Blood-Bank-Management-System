@@ -4,6 +4,8 @@ from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
 
+from .deploy import add_render_hostname, database_config
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -22,6 +24,8 @@ DEBUG = env_bool("DJANGO_DEBUG", True)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 # Full origins including the scheme, e.g. https://bbms.example.com
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
+# Render sets this to the service's public host name.
+add_render_hostname(os.environ, ALLOWED_HOSTS, CSRF_TRUSTED_ORIGINS)
 
 if not DEBUG and (SECRET_KEY in ("", "change-me", _DEV_SECRET_KEY) or len(SECRET_KEY) < 32):
     raise ImproperlyConfigured(
@@ -80,24 +84,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-if os.environ.get("DB_HOST"):
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.environ.get("DB_NAME", "bbms"),
-            "USER": os.environ.get("DB_USER", "bbms"),
-            "PASSWORD": os.environ.get("DB_PASSWORD", ""),
-            "HOST": os.environ["DB_HOST"],
-            "PORT": os.environ.get("DB_PORT", "5432"),
-        }
-    }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
+# DATABASE_URL (e.g. from Neon) wins; otherwise DB_* for Postgres; otherwise SQLite.
+DATABASES = {"default": database_config(os.environ, BASE_DIR)}
 
 AUTH_USER_MODEL = "users.User"
 
