@@ -10,7 +10,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, inline_serializer
 
 from users.permissions import IsHospital, IsStaffOrAdmin
-from inventory.models import BloodStock
+from inventory.models import BloodStock, BloodUnit
 
 from .models import BloodRequest, BloodReservation
 from .serializers import BloodRequestSerializer
@@ -28,6 +28,14 @@ RBC_COMPATIBILITY = {
     "AB-": ["O-", "A-", "B-", "AB-"],
     "AB+": ["O-", "O+", "A-", "A+", "B-", "B+", "AB-", "AB+"],
 }
+
+
+def sync_unit_quantity(stock):
+    """Mirror a stock row's remaining units onto its BloodUnit (staff inventory view)."""
+    BloodUnit.objects.filter(stock=stock).update(
+        quantity=stock.available_units,
+        updated_at=timezone.now(),
+    )
 
 
 class BloodRequestCreateView(generics.CreateAPIView):
@@ -200,6 +208,7 @@ class BloodRequestProcessView(APIView):
                         update_fields.append("status")
 
                     stock.save(update_fields=update_fields)
+                    sync_unit_quantity(stock)
                     remaining -= reserved_units
 
             # REJECT: only pending requests can be rejected.
@@ -363,6 +372,7 @@ class BloodRequestCancelView(APIView):
                     update_fields.append("status")
 
                 stock.save(update_fields=update_fields)
+                sync_unit_quantity(stock)
 
                 reservation.active = False
                 reservation.released_at = now

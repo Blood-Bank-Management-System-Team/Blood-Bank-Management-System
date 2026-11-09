@@ -40,6 +40,8 @@ urlpatterns = [
     path("", include("users.web_urls")),
     path("", include("reports.web_urls")),
     path("", include("camps.urls")),
+    path("", include("bloodrequests.web_urls")),
+    path("", include("inventory.web_urls")),
 
     path("admin/", admin.site.urls),
     path("api/notifications/", include("notifications.urls")),

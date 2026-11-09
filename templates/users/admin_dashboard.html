@@ -23,7 +23,8 @@
     <div class="icon-tile"><svg class="icon"><use href="#i-drop"/></svg></div>
     <h2>Blood Bank Operations</h2>
     <p>Access the registered application data through authorized administration tools.</p>
-    <p class="muted">Inventory and request workflows are managed through their respective modules.</p>
+    <a class="btn" href="{% url 'blood-request-process-page' %}">Process requests</a>
+    <a class="btn btn-secondary" href="{% url 'inventory-page' %}">Manage inventory</a>
   </section>
 
   <section class="card">
@@ -32,6 +33,14 @@
     <p>Review available records and administrative information.</p>
     <a class="btn" href="{% url 'reports' %}">Reports &amp; Analytics</a>
     <a class="btn btn-secondary" href="{% url 'audit-logs' %}">View Audit Log</a>
+  </section>
+
+  <section class="card">
+    <div class="icon-tile"><svg class="icon"><use href="#i-calendar"/></svg></div>
+    <h2>Donation Camps</h2>
+    <p>Create, publish and manage donation camps.</p>
+    <a class="btn" href="{% url 'camp-manage' %}">Manage camps</a>
+    <a class="btn btn-secondary" href="{% url 'blood-availability-page' %}">Search availability</a>
   </section>
 
   <section class="card">

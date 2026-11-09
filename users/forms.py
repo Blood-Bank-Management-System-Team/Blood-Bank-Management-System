@@ -1,6 +1,5 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.password_validation import validate_password
 
 from .models import User
 from .serializers import PHONE_RE, SELF_REGISTER_ROLES

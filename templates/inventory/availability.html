@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Blood Availability - BBMS{% endblock %}
+{% block bodyclass %}bg-auth{% endblock %}
+{% block mainclass %}centered{% endblock %}
+{% block content %}
+<section class="card auth-card wide">
+  <div class="icon-tile"><svg class="icon"><use href="#i-drop"/></svg></div>
+  <h1>Blood Availability</h1>
+  <p class="lead">Search available units by blood group and location.</p>
+  <form method="get">
+    {{ form.as_p }}
+    <button type="submit">Search</button>
+  </form>
+  {% if searched %}
+    {% if available_units %}
+      <p class="badge badge-ok">{{ available_units }} unit{{ available_units|pluralize }} of {{ blood_group }} available at {{ location }}.</p>
+    {% else %}
+      <p class="badge badge-no">No available blood stock found for {{ blood_group }} at {{ location }}.</p>
+    {% endif %}
+  {% endif %}
+  <p class="form-links"><a href="{% url 'dashboard' %}">Back to dashboard</a></p>
+</section>
+{% endblock %}

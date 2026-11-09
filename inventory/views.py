@@ -1,5 +1,3 @@
-from drf_spectacular.utils import extend_schema, OpenApiParameter
-from drf_spectacular.types import OpenApiTypes
 from django.db.models import Sum
 from django.utils import timezone
 
@@ -18,7 +16,18 @@ from users.permissions import IsHospital, IsStaffOrAdmin
 
 from .compatibility import is_blood_compatible
 from .models import BloodStock, BloodUnit
-from .serializers import BloodAvailabilitySerializer, BloodUnitSerializer
+from .serializers import BloodUnitSerializer
+
+
+def get_available_units(blood_group, location):
+    """Unexpired, available units of a blood group at a location."""
+    matching_stock = BloodStock.objects.filter(
+        blood_group=blood_group,
+        location__iexact=location,
+        status=BloodStock.StockStatus.AVAILABLE,
+        expiry_date__gte=timezone.localdate(),
+    )
+    return matching_stock.aggregate(total=Sum("available_units"))["total"] or 0
 
 
 class BloodAvailabilityView(APIView):
@@ -86,21 +95,7 @@ class BloodAvailabilityView(APIView):
                 status=400,
             )
 
-        today = timezone.localdate()
-
-        matching_stock = BloodStock.objects.filter(
-            blood_group=blood_group,
-            location__iexact=location,
-            status=BloodStock.StockStatus.AVAILABLE,
-            expiry_date__gte=today,
-        )
-
-        total_units = (
-            matching_stock.aggregate(
-                total=Sum("available_units")
-            )["total"]
-            or 0
-        )
+        total_units = get_available_units(blood_group, location)
 
         if total_units == 0:
             return Response(

@@ -1,4 +1,3 @@
-
 import hashlib
 import hmac
 import secrets
@@ -82,25 +81,19 @@ def verify_password_reset_otp(email, otp):
         cache.delete(key)
         return None
 
-    if not isinstance(otp, str) or len(otp) != OTP_LENGTH or not otp.isdigit():
+    otp = otp.strip() if isinstance(otp, str) else ""
+    is_valid = (
+        len(otp) == OTP_LENGTH
+        and otp.isdigit()
+        and hmac.compare_digest(_otp_hash(otp), record["otp_hash"])
+    )
+
+    if not is_valid:
         record["attempts"] += 1
-    else:
-        if hmac.compare_digest(_otp_hash(otp), record["otp_hash"]):
-        # Continue with the existing successful-verification logic.
-            pass
+        if record["attempts"] >= OTP_MAX_ATTEMPTS:
+            cache.delete(key)
         else:
-            record["attempts"] += 1
-
-    if record["attempts"] >= OTP_MAX_ATTEMPTS:
-        cache.delete(key)
-        return None
-
-    if not isinstance(otp, str) or len(otp) != OTP_LENGTH or not otp.isdigit():
-        cache.set(key, record, timeout=OTP_TIMEOUT_SECONDS)
-        return None
-
-    if not hmac.compare_digest(_otp_hash(otp), record["otp_hash"]):
-        cache.set(key, record, timeout=OTP_TIMEOUT_SECONDS)
+            cache.set(key, record, timeout=OTP_TIMEOUT_SECONDS)
         return None
 
     user = User.objects.filter(

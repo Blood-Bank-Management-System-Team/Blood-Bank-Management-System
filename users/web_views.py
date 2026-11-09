@@ -2,8 +2,7 @@
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import PermissionDenied
 from django.db.models import Sum
 from django.shortcuts import redirect, render
 from django.utils import timezone
@@ -26,6 +25,17 @@ from .password_reset import (
     request_password_reset,
     verify_password_reset_otp,
 )
+
+
+class RoleRequiredMixin(LoginRequiredMixin):
+    """Login required; 403 unless the user's role is in ``allowed_roles``."""
+
+    allowed_roles = ()
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and request.user.role not in self.allowed_roles:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
 
 
 

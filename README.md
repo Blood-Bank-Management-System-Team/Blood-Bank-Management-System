@@ -39,7 +39,28 @@ docker compose up --build
 
 The web app is served on http://localhost:8000/ with PostgreSQL 16 as the database. The image runs gunicorn as a non-root user, serves static files with WhiteNoise and applies migrations when the container starts.
 
+## Deploy for free on Render + Neon + Brevo
+
+Render hosts the app (free web service, built from `render.yaml`), Neon provides the Postgres database (free, no expiry; Render's own free Postgres is deleted after 30 days) and Brevo sends email over HTTPS (Render's free plan blocks SMTP).
+
+1. **Neon** - create a project at https://neon.tech. In *Connect*, enable *Connection pooling* and copy the pooled connection string (`postgresql://user:pass@ep-xxx-pooler.<region>.aws.neon.tech/neondb?sslmode=require`). This is your `DATABASE_URL`.
+2. **Brevo** - at https://www.brevo.com verify a sender (Senders, Domains & Dedicated IPs > Senders) and create an API key (SMTP & API > API Keys). The verified sender address is your `DEFAULT_FROM_EMAIL`, for example `BBMS <you@example.com>`.
+3. **Render** - New > Blueprint, pick this repository and branch `main`. Render reads `render.yaml`; fill in the values marked `sync: false`:
+
+   | Variable | Value |
+   |---|---|
+   | `DATABASE_URL` | the Neon connection string from step 1 |
+   | `BREVO_API_KEY` | the Brevo API key |
+   | `DEFAULT_FROM_EMAIL` | the verified Brevo sender |
+   | `DJANGO_SUPERUSER_USERNAME`, `DJANGO_SUPERUSER_PASSWORD`, `DJANGO_SUPERUSER_EMAIL` | your first admin. Created on start if the username does not exist; an existing user's password is never changed. Render's free plan has no shell, so this is the way to get an admin. |
+
+4. Open `https://<your-service>.onrender.com/api/health/`; it should return HTTP 200. The first request after 15 minutes of idle time is slow because the free instance sleeps. If Render assigns a different host name than `bbms-web.onrender.com`, it is allowed automatically (`RENDER_EXTERNAL_HOSTNAME`).
+
+Render redeploys by itself on every push to `main`; the SSH deploy job in the CD workflow is not used here.
+
 ## Deployment (CD)
+
+This section describes deploying to your own server over SSH. For Render, see above.
 
 ### Pipeline
 

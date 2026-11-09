@@ -59,6 +59,13 @@
 
   <section class="card">
     <div class="icon-tile"><svg class="icon"><use href="#i-calendar"/></svg></div>
+    <h2>Donation Camps</h2>
+    <p>Find an upcoming camp and register to donate.</p>
+    <a class="btn" href="{% url 'camp-list' %}">Find a camp</a>
+  </section>
+
+  <section class="card">
+    <div class="icon-tile"><svg class="icon"><use href="#i-calendar"/></svg></div>
     <h2>Donation History</h2>
     <p><strong>Total donations:</strong> {{ donation_count }}</p>
     {% if donations %}

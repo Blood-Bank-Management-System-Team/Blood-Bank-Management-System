@@ -2,7 +2,7 @@ from django import forms
 
 from django.db.models import Q
 
-from .models import DonationRecord, DonorProfile, not_in_future
+from .models import DonorProfile, not_in_future
 
 
 class DonorProfileForm(forms.ModelForm):
