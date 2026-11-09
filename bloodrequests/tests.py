@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from threading import Barrier
 
 from django.contrib.auth import get_user_model
-from django.db import close_old_connections
+from django.db import close_old_connections, connection
 from django.test import TestCase, TransactionTestCase, skipUnlessDBFeature
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -547,7 +547,10 @@ class BloodRequestConcurrencyTests(TransactionTestCase):
                 )
                 return response.status_code
             finally:
-                close_old_connections()
+                # Worker threads own their connection; with CONN_MAX_AGE > 0
+                # close_old_connections() would leave it open and block
+                # dropping the test database.
+                connection.close()
 
         with ThreadPoolExecutor(max_workers=2) as executor:
             results = list(
