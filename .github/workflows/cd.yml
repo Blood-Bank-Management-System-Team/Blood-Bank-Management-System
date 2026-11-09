@@ -100,7 +100,7 @@ jobs:
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
           if [ -z "$DEPLOY_HOST" ]; then
-            echo "::notice title=Deploy skipped::DEPLOY_HOST is not set, so nothing was deployed. Add the DEPLOY_* secrets to enable deployment."
+            echo "::notice title=Deploy job skipped (this is expected on Render)::Render auto-deploys from the main branch, so no action is needed here. This SSH deploy job is only for a self-hosted VM; DEPLOY_HOST is not set, so nothing was deployed by it. Add the DEPLOY_* secrets only if you deploy to your own server."
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi

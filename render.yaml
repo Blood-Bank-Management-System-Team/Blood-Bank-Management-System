@@ -1,9 +1,3 @@
-databases:
-  - name: bbms-postgres
-    databaseName: bbms
-    user: bbms_user
-    plan: free
-
 services:
   - type: web
     name: bbms-web
@@ -21,29 +15,24 @@ services:
         value: bbms-web.onrender.com
       - key: DJANGO_CSRF_TRUSTED_ORIGINS
         value: https://bbms-web.onrender.com
-      - key: DB_NAME
-        fromDatabase:
-          name: bbms-postgres
-          property: database
-      - key: DB_USER
-        fromDatabase:
-          name: bbms-postgres
-          property: user
-      - key: DB_PASSWORD
-        fromDatabase:
-          name: bbms-postgres
-          property: password
-      - key: DB_HOST
-        fromDatabase:
-          name: bbms-postgres
-          property: host
-      - key: DB_PORT
-        fromDatabase:
-          name: bbms-postgres
-          property: port
+      # The free instance has 512 MB of memory, so keep the worker count low.
+      - key: GUNICORN_CMD_ARGS
+        value: "--workers 2 --access-logfile -"
+      # Neon Postgres connection string (use the pooled one), e.g.
+      # postgresql://user:pass@ep-xxx-pooler.region.aws.neon.tech/neondb?sslmode=require
+      - key: DATABASE_URL
+        sync: false
       # Email for password-reset OTPs and notifications. Render's free plan blocks
       # SMTP ports, so use Brevo's HTTPS API: set both values in the Render dashboard.
       - key: BREVO_API_KEY
         sync: false
       - key: DEFAULT_FROM_EMAIL
+        sync: false
+      # First admin account, created at startup if it does not exist yet
+      # (Render's free plan has no shell). The password of an existing user is never changed.
+      - key: DJANGO_SUPERUSER_USERNAME
+        sync: false
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false
+      - key: DJANGO_SUPERUSER_EMAIL
         sync: false
