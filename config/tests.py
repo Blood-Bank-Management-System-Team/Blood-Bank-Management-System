@@ -49,6 +49,26 @@ class DatabaseUrlTests(SimpleTestCase):
         with self.assertRaises(ImproperlyConfigured):
             database_config({"DATABASE_URL": "mysql://u:p@h/d"}, BASE_DIR)
 
+    def test_extracts_url_from_pasted_snippets(self):
+        url = "postgresql://u:s3cret@ep-x-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+        for pasted in (
+            f"psql '{url}'",
+            f'DATABASE_URL="{url}"',
+            f"'{url}'",
+            f"  {url}\n",
+        ):
+            with self.subTest(pasted=pasted):
+                db = database_config({"DATABASE_URL": pasted}, BASE_DIR)
+                self.assertEqual(db["HOST"], "ep-x-pooler.ap-southeast-1.aws.neon.tech")
+                self.assertEqual(db["PASSWORD"], "s3cret")
+                self.assertEqual(db["OPTIONS"], {"sslmode": "require"})
+
+    def test_error_does_not_reveal_the_value(self):
+        with self.assertRaises(ImproperlyConfigured) as ctx:
+            database_config({"DATABASE_URL": "mysql://user:TopSecret99@h/d"}, BASE_DIR)
+        self.assertNotIn("TopSecret99", str(ctx.exception))
+        self.assertNotIn("user", str(ctx.exception))
+
     def test_falls_back_to_db_vars(self):
         env = {"DB_HOST": "db", "DB_NAME": "n", "DB_USER": "u", "DB_PASSWORD": "p", "DB_PORT": "5433"}
         db = database_config(env, BASE_DIR)
