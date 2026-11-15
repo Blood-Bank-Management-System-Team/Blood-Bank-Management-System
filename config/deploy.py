@@ -1,16 +1,37 @@
 """Environment-driven deployment helpers used by settings.py (kept separate so they can be unit tested)."""
+import re
 from urllib.parse import parse_qsl, unquote, urlsplit
 
 from django.core.exceptions import ImproperlyConfigured
 
 _POSTGRES_SCHEMES = ("postgres", "postgresql")
+_URL_IN_TEXT = re.compile(r"postgres(?:ql)?://[^\s'\"]+")
+
+
+def _extract_url(value):
+    """Pull the connection URL out of common copy-paste wrappers.
+
+    Dashboards often copy a snippet rather than the bare URL, e.g.
+    psql 'postgresql://...', DATABASE_URL="postgresql://..." or a quoted value.
+    """
+    match = _URL_IN_TEXT.search(value)
+    return match.group(0) if match else value
+
+
+def _describe(value):
+    """Describe a bad value without revealing any secret in it."""
+    head = re.sub(r"[A-Za-z0-9]", "x", value[:12])
+    return f"got {len(value)} characters starting with {head!r}"
 
 
 def _parse_database_url(url):
+    url = _extract_url(url)
     parts = urlsplit(url)
     if parts.scheme not in _POSTGRES_SCHEMES:
         raise ImproperlyConfigured(
-            "DATABASE_URL must start with postgresql:// (or postgres://)."
+            "DATABASE_URL must be a postgresql:// (or postgres://) connection string; "
+            + _describe(url)
+            + "."
         )
     if not parts.hostname:
         raise ImproperlyConfigured("DATABASE_URL has no host name.")
